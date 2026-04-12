@@ -4,32 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GMinsta Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/public/css/style.css" />
 </head>
 <body>
-  <div class="container">
-    <div class="row between nav">
-      <div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="/home" class="brand">GMinsta</a>
+      <nav class="nav nav-pills">
         <a href="/home">Home</a>
         <a href="/profile">Profile</a>
-        <a href="/chat">Chat</a>
-      </div>
-      <div class="row">
-        <button id="themeBtn">Dark/Light</button>
+        <a href="/chat" class="active">Messages</a>
+      </nav>
+      <div class="row topbar-actions">
+        <button id="themeBtn" class="btn-outline">Dark/Light</button>
         <button id="logoutBtn" class="btn-danger">Logout</button>
       </div>
     </div>
-    <div class="card">
-      <h3>One-to-one Chat</h3>
+  </header>
+
+  <main class="container chat-layout">
+    <div class="card chat-sidebar">
+      <h3>Open Conversation</h3>
       <input id="otherUserId" placeholder="Enter receiver user ID" />
       <button id="loadChatBtn">Load Conversation</button>
+      <p class="muted">Use a user ID from search on profile page.</p>
+    </div>
+
+    <div class="card chat-main">
+      <h3>Messages</h3>
       <div id="chatBox" class="chat-box"></div>
-      <form id="chatForm">
+      <form id="chatForm" class="chat-form">
         <input id="messageText" placeholder="Type a message..." />
         <button type="submit">Send</button>
       </form>
     </div>
-  </div>
+  </main>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>

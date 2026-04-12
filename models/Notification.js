@@ -8,7 +8,9 @@ const notificationSchema = new mongoose.Schema(
     type: { type: String, enum: ["like", "comment"], required: true },
     isRead: { type: Boolean, default: false }
   },
-  { timestamps: true }
+  { timestamps: true, collection: "Notification" }
 );
+
+notificationSchema.index({ userId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Notification", notificationSchema);

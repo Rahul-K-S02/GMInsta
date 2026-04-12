@@ -16,8 +16,9 @@ socket.on("message_received", (msg) => renderMessage(msg));
 socket.on("message_sent", (msg) => renderMessage(msg));
 
 const renderMessage = (msg) => {
-  const who = msg.senderId._id === me.id ? "You" : msg.senderId.username;
-  chatBox.insertAdjacentHTML("beforeend", `<div class="msg"><strong>${who}:</strong> ${msg.messageText}</div>`);
+  const mine = msg.senderId._id === me.id;
+  const who = mine ? "You" : msg.senderId.username;
+  chatBox.insertAdjacentHTML("beforeend", `<div class="msg ${mine ? "mine" : "theirs"}"><strong>${who}:</strong> ${msg.messageText}</div>`);
   chatBox.scrollTop = chatBox.scrollHeight;
 };
 

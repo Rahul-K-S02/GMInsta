@@ -1,5 +1,6 @@
 const Post = require("../models/Post");
 const Notification = require("../models/Notification");
+const User = require("../models/User");
 
 const createPost = async (req, res, next) => {
   try {
@@ -12,6 +13,7 @@ const createPost = async (req, res, next) => {
       caption,
       image: `/uploads/${req.file.filename}`
     });
+    await User.findByIdAndUpdate(req.user.id, { $addToSet: { "links.posts": post._id } });
     return res.status(201).json(post);
   } catch (error) {
     next(error);
@@ -60,7 +62,8 @@ const reactPost = async (req, res, next) => {
     await post.save();
 
     if (action === "like" && String(post.userId) !== uid) {
-      await Notification.create({ userId: post.userId, actorId: uid, postId: post._id, type: "like" });
+      const notification = await Notification.create({ userId: post.userId, actorId: uid, postId: post._id, type: "like" });
+      await User.findByIdAndUpdate(post.userId, { $addToSet: { "links.notifications": notification._id } });
     }
 
     return res.json({ message: "Reaction updated", likes: post.likes.length, dislikes: post.dislikes.length });

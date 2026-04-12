@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Message = require("../models/Message");
+const User = require("../models/User");
 
 const onlineUsers = new Map();
 
@@ -28,6 +29,10 @@ const setupSocket = (io) => {
         receiverId,
         messageText
       });
+      await Promise.all([
+        User.findByIdAndUpdate(userId, { $addToSet: { "links.messages": message._id } }),
+        User.findByIdAndUpdate(receiverId, { $addToSet: { "links.messages": message._id } })
+      ]);
 
       const populated = await message.populate("senderId receiverId", "username profilePic");
       socket.emit("message_sent", populated);

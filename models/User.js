@@ -8,9 +8,15 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, default: "" },
     profilePic: { type: String, default: "/public/images/default-avatar.svg" },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    links: {
+      posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+      comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
+      messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
+      notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notification" }]
+    }
   },
-  { timestamps: true }
+  { timestamps: true, collection: "User" }
 );
 
 module.exports = mongoose.model("User", userSchema);

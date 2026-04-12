@@ -38,23 +38,26 @@ postForm?.addEventListener("submit", async (e) => {
 });
 
 const renderPost = (post) => `
-  <div class="card">
-    <div class="row">
+  <article class="card post-card">
+    <div class="row post-head">
       <img class="avatar" src="${post.userId.profilePic}" alt="avatar" />
-      <div><strong>${post.userId.username}</strong><div class="muted">${new Date(post.createdAt).toLocaleString()}</div></div>
+      <div>
+        <strong>${post.userId.username}</strong>
+        <div class="muted">${new Date(post.createdAt).toLocaleString()}</div>
+      </div>
     </div>
     <p>${post.caption}</p>
     <img class="post-img" src="${post.image}" alt="post" />
-    <div class="row">
+    <div class="row post-actions">
       <button onclick="react('${post._id}','like')">Like (${post.likes.length})</button>
       <button onclick="react('${post._id}','dislike')">Dislike (${post.dislikes.length})</button>
     </div>
-    <form onsubmit="addComment(event, '${post._id}')">
+    <form class="comment-form" onsubmit="addComment(event, '${post._id}')">
       <input id="comment-${post._id}" placeholder="Add comment..." />
       <button type="submit">Comment</button>
     </form>
-    <div id="comments-${post._id}" class="muted"></div>
-  </div>
+    <div id="comments-${post._id}" class="comment-list"></div>
+  </article>
 `;
 
 async function loadPosts() {
@@ -103,14 +106,31 @@ async function addComment(e, postId) {
 async function loadComments(postId) {
   const comments = await apiFetch(`/comments/${postId}`);
   const list = document.getElementById(`comments-${postId}`);
-  list.innerHTML = comments.map((c) => `<div><strong>${c.userId.username}:</strong> ${c.commentText}</div>`).join("");
+  list.innerHTML = comments
+    .map(
+      (c) => `<div class="comment-item">
+        <strong>${c.userId.username}</strong> <span>${c.commentText}</span>
+        <button onclick="reactComment('${c._id}','like','${postId}')">Like (${c.likesCount || 0})</button>
+        <button onclick="reactComment('${c._id}','dislike','${postId}')">Dislike (${c.dislikesCount || 0})</button>
+      </div>`
+    )
+    .join("");
+}
+
+async function reactComment(commentId, action, postId) {
+  await apiFetch(`/comments/${commentId}/react`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action })
+  });
+  loadComments(postId);
 }
 
 async function loadNotifications() {
   const notifications = await apiFetch("/notifications");
   notificationsList.innerHTML = notifications
     .slice(0, 6)
-    .map((n) => `<div class="muted">${n.actorId.username} ${n.type}d your post</div>`)
+    .map((n) => `<div class="notification-item">${n.actorId.username} ${n.type}d your post</div>`)
     .join("");
 }
 

@@ -46,7 +46,7 @@ userSearch?.addEventListener("input", async () => {
   searchResults.innerHTML = users
     .map(
       (u) => `
-      <div class="card">
+      <div class="card user-result">
         <div class="row between">
           <div class="row">
             <img class="avatar" src="${u.profilePic}" />

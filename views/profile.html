@@ -4,37 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GMinsta Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/public/css/style.css" />
 </head>
 <body>
-  <div class="container">
-    <div class="row between nav">
-      <div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="/home" class="brand">GMinsta</a>
+      <nav class="nav nav-pills">
         <a href="/home">Home</a>
-        <a href="/profile">Profile</a>
-        <a href="/chat">Chat</a>
-      </div>
-      <div class="row">
-        <button id="themeBtn">Dark/Light</button>
+        <a href="/profile" class="active">Profile</a>
+        <a href="/chat">Messages</a>
+      </nav>
+      <div class="row topbar-actions">
+        <button id="themeBtn" class="btn-outline">Dark/Light</button>
         <button id="logoutBtn" class="btn-danger">Logout</button>
       </div>
     </div>
-    <div id="profileCard" class="card"></div>
-    <div class="card">
-      <h3>Edit Profile</h3>
-      <form id="profileForm">
-        <textarea name="bio" placeholder="Your bio"></textarea>
-        <input id="profilePic" name="profilePic" type="file" accept="image/*" />
-        <img id="profilePreview" class="preview" style="display:none;" alt="preview" />
-        <button type="submit">Save</button>
-      </form>
-    </div>
-    <div class="card">
+  </header>
+
+  <main class="container page-grid">
+    <section>
+      <div id="profileCard" class="card profile-hero"></div>
+      <div class="card">
+        <h3>Edit Profile</h3>
+        <form id="profileForm">
+          <textarea name="bio" placeholder="Your bio"></textarea>
+          <input id="profilePic" name="profilePic" type="file" accept="image/*" />
+          <img id="profilePreview" class="preview" style="display:none;" alt="preview" />
+          <button type="submit">Save</button>
+        </form>
+      </div>
+    </section>
+    <aside class="card">
       <h3>Search Users</h3>
       <input id="userSearch" placeholder="Search by username or email" />
       <div id="searchResults"></div>
-    </div>
-  </div>
+    </aside>
+  </main>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>
   <script src="/public/js/profile.js"></script>

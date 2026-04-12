@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GMinsta Home</title>
+  <link rel="stylesheet" href="/public/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="row between nav">
+      <div>
+        <a href="/home">Home</a>
+        <a href="/profile">Profile</a>
+        <a href="/chat">Chat</a>
+      </div>
+      <div class="row">
+        <button id="themeBtn">Dark/Light</button>
+        <button id="logoutBtn" class="btn-danger">Logout</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <h3>Create Post</h3>
+          <form id="postForm">
+            <input name="caption" placeholder="Write a caption..." required />
+            <input id="postImage" name="image" type="file" accept="image/*" required />
+            <img id="imagePreview" class="preview" style="display:none;" alt="preview" />
+            <button type="submit">Upload Post</button>
+          </form>
+        </div>
+        <div id="feed"></div>
+      </div>
+      <div class="card">
+        <h3>Notifications</h3>
+        <div id="notifications" class="muted"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/theme.js"></script>
+  <script src="/public/js/home.js"></script>
+</body>
+</html>

@@ -5,6 +5,8 @@ const User = require("../models/User");
 const onlineUsers = new Map();
 
 const setupSocket = (io) => {
+  io.onlineUsers = onlineUsers;
+
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -23,6 +25,14 @@ const setupSocket = (io) => {
 
     socket.on("private_message", async ({ receiverId, messageText }) => {
       if (!receiverId || !messageText) return;
+
+      const isConnected = await User.exists({
+        _id: userId,
+        $or: [{ following: receiverId }, { followers: receiverId }]
+      });
+      if (!isConnected) {
+        return socket.emit("error", { message: "You can only message connected users." });
+      }
 
       const message = await Message.create({
         senderId: userId,

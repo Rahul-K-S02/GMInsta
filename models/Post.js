@@ -5,6 +5,7 @@ const postSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     caption: { type: String, required: true, trim: true, maxlength: 300 },
     image: { type: String, required: true },
+    imagePublicId: { type: String, unique: true, sparse: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
   },

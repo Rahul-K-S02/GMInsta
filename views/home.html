@@ -15,6 +15,7 @@
       <a href="/home" class="brand">GMinsta</a>
       <nav class="nav nav-pills">
         <a href="/home" class="active">Home</a>
+        <a href="/discover">Discover</a>
         <a href="/profile">Profile</a>
         <a href="/chat">Messages</a>
       </nav>
@@ -27,10 +28,23 @@
 
   <main class="container app-shell">
     <aside class="left-rail card">
-      <h4>Quick Menu</h4>
-      <a href="/home" class="rail-link active">Home Feed</a>
-      <a href="/profile" class="rail-link">My Profile</a>
-      <a href="/chat" class="rail-link">Direct Messages</a>
+      <div class="sidebar-section">
+        <h4>Quick Menu</h4>
+        <a href="/home" class="rail-link active">Home Feed</a>
+        <a href="/discover" class="rail-link">Discover</a>
+        <a href="/profile" class="rail-link">My Profile</a>
+        <a href="/chat" class="rail-link">Direct Messages</a>
+      </div>
+      
+      <div class="sidebar-section">
+        <h4>👥 My Friends</h4>
+        <div id="friendsList" class="users-list"></div>
+      </div>
+      
+      <div class="sidebar-section">
+        <h4>✨ Suggested Users</h4>
+        <div id="exploreUsers" class="users-list"></div>
+      </div>
     </aside>
 
     <section class="feed-column">
@@ -59,6 +73,7 @@
       <div id="notifications" class="muted"></div>
     </aside>
   </main>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>
   <script src="/public/js/home.js"></script>

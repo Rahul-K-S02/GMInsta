@@ -1,21 +1,35 @@
 const Post = require("../models/Post");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const mongoose = require("mongoose");
+const { uploadBufferToCloudinary, deleteFromCloudinary } = require("../utils/cloudinary");
 
 const createPost = async (req, res, next) => {
+  let imagePublicId = null;
   try {
-    const { caption } = req.body;
+    const caption = (req.body.caption || "").trim();
     if (!req.file) return res.status(400).json({ message: "Post image is required" });
     if (!caption) return res.status(400).json({ message: "Caption is required" });
 
+    const postId = new mongoose.Types.ObjectId();
+    imagePublicId = `posts/${req.user.id}/${postId.toString()}`;
+    const uploadedImage = await uploadBufferToCloudinary({
+      buffer: req.file.buffer,
+      publicId: imagePublicId
+    });
+
     const post = await Post.create({
+      _id: postId,
       userId: req.user.id,
       caption,
-      image: `/uploads/${req.file.filename}`
+      image: uploadedImage.secure_url,
+      imagePublicId: uploadedImage.public_id
     });
+
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { "links.posts": post._id } });
     return res.status(201).json(post);
   } catch (error) {
+    if (imagePublicId) await deleteFromCloudinary(imagePublicId).catch(() => {});
     next(error);
   }
 };
@@ -48,25 +62,30 @@ const getFeed = async (req, res, next) => {
 const reactPost = async (req, res, next) => {
   try {
     const { action } = req.body;
-    if (!["like", "dislike"].includes(action)) return res.status(400).json({ message: "Invalid action" });
+    if (action !== "like") return res.status(400).json({ message: "Invalid action" });
 
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     const uid = req.user.id;
-    post.likes = post.likes.filter((id) => String(id) !== uid);
-    post.dislikes = post.dislikes.filter((id) => String(id) !== uid);
-    if (action === "like") post.likes.push(uid);
-    else post.dislikes.push(uid);
+    const isLiked = post.likes.some((id) => String(id) === uid);
+
+    if (isLiked) {
+      // Unlike: remove from likes
+      post.likes = post.likes.filter((id) => String(id) !== uid);
+    } else {
+      // Like: add to likes
+      post.likes.push(uid);
+    }
 
     await post.save();
 
-    if (action === "like" && String(post.userId) !== uid) {
+    if (!isLiked && String(post.userId) !== uid) {
       const notification = await Notification.create({ userId: post.userId, actorId: uid, postId: post._id, type: "like" });
       await User.findByIdAndUpdate(post.userId, { $addToSet: { "links.notifications": notification._id } });
     }
 
-    return res.json({ message: "Reaction updated", likes: post.likes.length, dislikes: post.dislikes.length });
+    return res.json({ message: "Reaction updated", likes: post.likes.length, isLiked: !isLiked });
   } catch (error) {
     next(error);
   }

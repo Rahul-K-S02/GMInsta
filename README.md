@@ -1,55 +1,46 @@
 # GMinsta
 
-Instagram-like mini social media app using Node.js, Express, MongoDB, JWT, Multer, and Socket.io.
+Instagram-like mini social media app using Node.js, Express, MongoDB, JWT, Multer, Socket.io, and Cloudinary.
 
-## Folder Structure
+## What Changed for Image Storage
 
-```txt
-GMinsta/
-├── config/
-├── controllers/
-├── middleware/
-├── models/
-├── public/
-│   ├── css/
-│   ├── images/
-│   └── js/
-├── routes/
-├── seed/
-├── uploads/
-├── views/
-├── .env.example
-├── app.js
-└── package.json
-```
+Images are no longer stored in local `uploads/` for new uploads.
 
-## Features
+- Post image `public_id`: `posts/<userId>/<postId>`
+- Profile image `public_id`: `profiles/<userId>`
+- Post document stores:
+  - `image` (Cloudinary secure URL)
+  - `imagePublicId` (Cloudinary public id)
+- User document stores:
+  - `profilePic` (Cloudinary secure URL)
+  - `profilePicPublicId` (Cloudinary public id)
 
-- Authentication (register/login) with JWT + bcrypt
-- User profile, bio, profile image upload
-- Follow/unfollow users
-- Create post with image upload (Multer)
-- Feed with pagination and infinite scroll
-- Like/dislike posts
-- Comment add/view/delete
-- Notification feed for likes/comments
-- Search users
-- One-to-one real-time chat via Socket.io
-- Security middleware: Helmet, CORS, rate limit
-- Dark mode UI
+This guarantees each uploaded image is mapped to the correct MongoDB user and post IDs.
 
-## Setup (Step-by-Step)
+## Setup (Basic, Step by Step)
 
 1. Install dependencies:
    - `npm install`
-2. Create `.env` from `.env.example` and update values.
-3. Ensure MongoDB is running locally or use Atlas URI.
-4. Optional sample data:
-   - `npm run seed`
-5. Start app:
+2. Create your env file:
+   - Copy `.env.example` to `.env`
+3. Fill required values in `.env`:
+   - MongoDB values (`MONGO_URI`, `DB_NAME`)
+   - JWT values (`JWT_SECRET`, `JWT_EXPIRES_IN`)
+   - Cloudinary values (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`)
+4. Start app:
    - `npm run dev`
-6. Open:
+5. Open:
    - [http://localhost:5000](http://localhost:5000)
+
+## Cloudinary Values (Where to Get)
+
+1. Create/login Cloudinary account.
+2. Open Dashboard.
+3. Copy:
+   - Cloud Name
+   - API Key
+   - API Secret
+4. Paste them into your `.env`.
 
 ## Important API Endpoints
 
@@ -61,14 +52,9 @@ GMinsta/
 - `GET /api/users/search?q=alice`
 - `POST /api/posts`
 - `GET /api/posts?page=1&limit=5`
-- `POST /api/posts/:postId/react` (body: `{ "action": "like" }`)
+- `POST /api/posts/:postId/react`
 - `POST /api/comments/:postId`
 - `GET /api/comments/:postId`
 - `DELETE /api/comments/:commentId`
 - `GET /api/messages/:userId`
 - `GET /api/notifications`
-
-## Sample Login Data (after seed)
-
-- `alice@gminsta.com` / `123456`
-- `bob@gminsta.com` / `123456`

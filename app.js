@@ -60,3 +60,12 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`GMinsta server running on http://localhost:${PORT}`);
 });
+
+server.on("error", (error) => {
+  if (error.syscall !== "listen") throw error;
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Please stop the process using it or set a different PORT.`);
+    process.exit(1);
+  }
+  throw error;
+});

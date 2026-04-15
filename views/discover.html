@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GMinsta Chat</title>
+  <title>GMinsta Discover</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
       <a href="/home" class="brand">GMinsta</a>
       <nav class="nav nav-pills">
         <a href="/home">Home</a>
-        <a href="/discover">Discover</a>
+        <a href="/discover" class="active">Discover</a>
         <a href="/profile">Profile</a>
-        <a href="/chat" class="active">Messages</a>
+        <a href="/chat">Messages</a>
       </nav>
       <div class="row topbar-actions">
         <button id="themeBtn" class="btn-outline">Dark/Light</button>
@@ -26,24 +26,19 @@
     </div>
   </header>
 
-  <main class="container chat-layout">
-    <div class="card chat-sidebar">
-      <h3>Friends</h3>
-      <div id="friendsList"></div>
-    </div>
-
-    <div class="card chat-main">
-      <h3 id="chatTitle">Select a friend to start chatting</h3>
-      <div id="chatBox" class="chat-box"></div>
-      <form id="chatForm" class="chat-form">
-        <input id="messageText" placeholder="Type a message..." />
-        <button type="submit">Send</button>
-      </form>
-    </div>
+  <main class="container app-shell">
+    <section class="feed-column">
+      <div class="card composer">
+        <h3>Discover Users</h3>
+        <p>Browse registered users, follow them instantly, and message friends in real time.</p>
+      </div>
+      <div id="discoverList" class="users-list"></div>
+    </section>
   </main>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>
-  <script src="/public/js/chat.js"></script>
+  <script src="/public/js/discover.js"></script>
 </body>
 </html>

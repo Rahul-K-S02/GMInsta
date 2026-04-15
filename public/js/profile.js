@@ -5,6 +5,7 @@ const profilePreview = document.getElementById("profilePreview");
 const profileCard = document.getElementById("profileCard");
 const userSearch = document.getElementById("userSearch");
 const searchResults = document.getElementById("searchResults");
+const me = getMe();
 
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
   clearAuth();
@@ -19,17 +20,38 @@ profilePic?.addEventListener("change", () => {
 });
 
 async function loadProfile() {
-  const user = await apiFetch("/users/me");
-  profileCard.innerHTML = `
-    <div class="row">
-      <img class="avatar" src="${user.profilePic}" alt="profile" />
-      <div>
-        <h3>${user.username}</h3>
-        <p>${user.bio || "No bio yet"}</p>
-        <p class="muted">${user.followers.length} followers • ${user.following.length} following</p>
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId') || 'me';
+    const endpoint = userId === 'me' ? '/users/me' : `/users/${userId}`;
+    const user = await apiFetch(endpoint);
+    const isMe = userId === 'me' || user._id === me.id;
+    const isFollowing = user.followers.some(f => f._id === me.id);
+    profileCard.innerHTML = `
+      <div class="row">
+        <img class="avatar" src="${user.profilePic}" alt="profile" />
+        <div>
+          <h3>${user.username}</h3>
+          <p>${user.bio || "No bio yet"}</p>
+          <p class="muted">${user.followers.length} followers • ${user.following.length} following</p>
+          ${!isMe ? `
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button class="btn" onclick="toggleFollowProfile('${user._id}')">${isFollowing ? 'Unfollow' : 'Follow'}</button>
+              <button class="btn" onclick="messageUser('${user._id}', '${user.username}')">Message</button>
+            </div>
+          ` : ''}
+        </div>
       </div>
-    </div>
-  `;
+    `;
+    if (isMe) {
+      document.getElementById('editSection').style.display = 'block';
+    } else {
+      document.getElementById('editSection').style.display = 'none';
+    }
+  } catch (error) {
+    console.error("Error loading profile:", error);
+    profileCard.innerHTML = '<p class="muted">Error loading profile</p>';
+  }
 }
 
 profileForm?.addEventListener("submit", async (e) => {
@@ -42,27 +64,40 @@ profileForm?.addEventListener("submit", async (e) => {
 userSearch?.addEventListener("input", async () => {
   const q = userSearch.value.trim();
   if (!q) return (searchResults.innerHTML = "");
-  const users = await apiFetch(`/users/search?q=${encodeURIComponent(q)}`);
-  searchResults.innerHTML = users
-    .map(
-      (u) => `
-      <div class="card user-result">
-        <div class="row between">
-          <div class="row">
-            <img class="avatar" src="${u.profilePic}" />
-            <div><strong>${u.username}</strong><div class="muted">${u.bio || ""}</div></div>
+  try {
+    const users = await apiFetch(`/users/search?q=${encodeURIComponent(q)}`);
+    searchResults.innerHTML = users
+      .map(
+        (u) => `
+        <div class="card user-result">
+          <div class="row between">
+            <a href="/profile?userId=${u._id}" class="row">
+              <img class="avatar" src="${u.profilePic}" />
+              <div><strong>${u.username}</strong><div class="muted">${u.bio || ""}</div></div>
+            </a>
+            <button class="btn-small" onclick="toggleFollowProfile('${u._id}')">Follow</button>
           </div>
-          <button onclick="toggleFollow('${u._id}')">Follow / Unfollow</button>
-        </div>
-      </div>`
-    )
-    .join("");
+        </div>`
+      )
+      .join("");
+  } catch (error) {
+    console.error("Error searching users:", error);
+    searchResults.innerHTML = '<p class="muted">Error searching users</p>';
+  }
 });
 
-async function toggleFollow(userId) {
-  const res = await apiFetch(`/users/follow/${userId}`, { method: "POST" });
-  alert(res.message);
-  loadProfile();
+async function toggleFollowProfile(userId) {
+  try {
+    const res = await apiFetch(`/users/follow/${userId}`, { method: "POST" });
+    await loadProfile();
+  } catch (error) {
+    console.error("Error following/unfollowing:", error);
+    alert("Error: " + error.message);
+  }
+}
+
+async function messageUser(userId, username) {
+  window.location.href = `/chat?user=${userId}`;
 }
 
 loadProfile();

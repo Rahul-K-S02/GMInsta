@@ -18,7 +18,17 @@ async function apiFetch(url, options = {}) {
   const headers = options.headers || {};
   if (!headers.Authorization && getToken()) headers.Authorization = `Bearer ${getToken()}`;
   const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
-  const data = await res.json();
+  const raw = await res.text();
+  let data = {};
+
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch (error) {
+      data = { message: raw };
+    }
+  }
+
   if (!res.ok) throw new Error(data.message || "Request failed");
   return data;
 }

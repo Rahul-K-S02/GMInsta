@@ -2,9 +2,14 @@ const Comment = require("../models/Comment");
 const Post = require("../models/Post");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 const addComment = async (req, res, next) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.postId)) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+
     const commentText = (req.body.commentText || "").trim();
     if (!commentText) return res.status(400).json({ message: "Comment is required" });
 
@@ -16,15 +21,35 @@ const addComment = async (req, res, next) => {
       userId: req.user.id,
       commentText
     });
-    await User.findByIdAndUpdate(req.user.id, { $addToSet: { "links.comments": comment._id } });
+
     const populated = await comment.populate("userId", "username profilePic");
+    await User.findByIdAndUpdate(req.user.id, { $addToSet: { "links.comments": comment._id } }).catch((error) => {
+      console.error("Unable to attach comment to user links:", error.message);
+    });
 
     if (String(post.userId) !== req.user.id) {
-      const notification = await Notification.create({ userId: post.userId, actorId: req.user.id, postId: post._id, type: "comment" });
-      await User.findByIdAndUpdate(post.userId, { $addToSet: { "links.notifications": notification._id } });
+      const notification = await Notification.create({
+        userId: post.userId,
+        actorId: req.user.id,
+        postId: post._id,
+        type: "comment"
+      }).catch((error) => {
+        console.error("Unable to create comment notification:", error.message);
+        return null;
+      });
+
+      if (notification?._id) {
+        await User.findByIdAndUpdate(post.userId, { $addToSet: { "links.notifications": notification._id } }).catch((error) => {
+          console.error("Unable to attach notification to user links:", error.message);
+        });
+      }
     }
 
-    return res.status(201).json(populated);
+    return res.status(201).json({
+      ...populated.toObject(),
+      likesCount: populated.likesCount ?? populated.likes?.length ?? 0,
+      dislikesCount: populated.dislikesCount ?? populated.dislikes?.length ?? 0
+    });
   } catch (error) {
     next(error);
   }
@@ -32,6 +57,10 @@ const addComment = async (req, res, next) => {
 
 const getCommentsByPost = async (req, res, next) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.postId)) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+
     const sortParam = String(req.query.sort || "asc").toLowerCase();
     const sort = sortParam === "desc" ? -1 : 1;
     const limit = Math.max(0, Math.min(parseInt(req.query.limit || "0", 10) || 0, 200));

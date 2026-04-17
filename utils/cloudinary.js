@@ -1,8 +1,19 @@
 const cloudinary = require("../config/cloudinary");
 
+const isPlaceholderValue = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return !normalized || normalized.startsWith("your_");
+};
+
 const ensureCloudinaryEnv = () => {
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-    throw new Error("Cloudinary env vars are missing. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.");
+  if (
+    isPlaceholderValue(process.env.CLOUDINARY_CLOUD_NAME) ||
+    isPlaceholderValue(process.env.CLOUDINARY_API_KEY) ||
+    isPlaceholderValue(process.env.CLOUDINARY_API_SECRET)
+  ) {
+    throw new Error(
+      "Cloudinary is not configured. Replace CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in .env with your real Cloudinary dashboard values."
+    );
   }
 };
 

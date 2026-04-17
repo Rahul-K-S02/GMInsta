@@ -97,19 +97,19 @@ const renderPost = (post) => `
     <p>${escapeHtml(post.caption)}</p>
     <img class="post-img" src="${post.image}" alt="post" />
     <div class="row post-actions">
-      <button class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
+      <button type="button" class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
         ${post.isLiked ? 'Unlike' : 'Like'} (${post.likesCount ?? post.likes?.length ?? 0})
       </button>
-      <button class="btn-small ${post.isDisliked ? 'disliked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="dislike">
+      <button type="button" class="btn-small ${post.isDisliked ? 'disliked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="dislike">
         ${post.isDisliked ? 'Undislike' : 'Dislike'} (${post.dislikesCount ?? post.dislikes?.length ?? 0})
       </button>
-      <button class="btn-small" data-action="open-comments" data-post-id="${post._id}">Comments</button>
+      <button type="button" class="btn-small" data-action="open-comments" data-post-id="${post._id}">Comments</button>
     </div>
     <div class="comments-section">
       <a href="#" id="toggle-comments-${post._id}" class="muted comment-toggle" data-action="toggle-comments" data-post-id="${post._id}" style="display:none;"></a>
       <div id="comments-${post._id}" class="comment-list"></div>
     </div>
-    <form class="comment-form" onsubmit="addComment(event, '${post._id}')">
+    <form class="comment-form" data-post-id="${post._id}">
       <input id="comment-${post._id}" placeholder="Add comment..." />
       <button type="submit">Comment</button>
     </form>
@@ -165,22 +165,42 @@ async function react(postId, action) {
 async function addComment(e, postId) {
   e.preventDefault();
   const input = document.getElementById(`comment-${postId}`);
+  const form = input?.closest("form");
+  const submitButton = form?.querySelector('button[type="submit"]');
   const text = (input?.value || "").trim();
   if (!text) return;
-  await apiFetch(`/comments/${postId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ commentText: text })
-  });
-  input.value = "";
-  loadComments(postId);
-  loadNotifications();
+
+  try {
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Saving...";
+    }
+
+    await apiFetch(`/comments/${postId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commentText: text })
+    });
+
+    expandedComments.add(String(postId));
+    input.value = "";
+    await loadComments(postId);
+    await loadNotifications();
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    alert(error.message || "Unable to save comment.");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Comment";
+    }
+  }
 }
 
 async function loadComments(postId) {
   try {
     const isExpanded = expandedComments.has(String(postId));
-    const query = isExpanded ? "sort=asc" : "sort=desc&limit=2";
+    const query = "sort=asc";
     const data = await apiFetch(`/comments/${postId}?${query}`);
 
     // Backward compatible: older API returned an array, newer returns { total, comments }.
@@ -190,15 +210,18 @@ async function loadComments(postId) {
     const toggle = document.getElementById(`toggle-comments-${postId}`);
     if (!list) return;
 
-    const toRender = isExpanded ? comments : comments.slice().reverse();
-    list.innerHTML = toRender
-      .map(
-        (c) => `<div class="comment-item">
-          <strong>${escapeHtml(c.userId?.username || "User")}</strong>
-          <span>${escapeHtml(c.commentText)}</span>
-        </div>`
-      )
-      .join("");
+    list.innerHTML = isExpanded
+      ? (comments.length
+          ? comments
+          .map(
+            (c) => `<div class="comment-item">
+              <strong>${escapeHtml(c.userId?.username || "User")}</strong>
+              <span>${escapeHtml(c.commentText)}</span>
+            </div>`
+          )
+          .join("")
+          : '<div class="muted">No comments yet.</div>')
+      : "";
 
     if (toggle) {
       if (total <= 0) {
@@ -206,16 +229,15 @@ async function loadComments(postId) {
       } else if (isExpanded) {
         toggle.style.display = "inline-block";
         toggle.textContent = "Hide comments";
-      } else if (total > toRender.length) {
-        toggle.style.display = "inline-block";
-        toggle.textContent = `View all ${total} comments`;
       } else {
         toggle.style.display = "inline-block";
-        toggle.textContent = "View comments";
+        toggle.textContent = total === 1 ? "View 1 comment" : `View all ${total} comments`;
       }
     }
   } catch (error) {
     console.error("Error loading comments:", error);
+    const list = document.getElementById(`comments-${postId}`);
+    if (list) list.innerHTML = '<div class="muted">Unable to load comments.</div>';
   }
 }
 
@@ -227,7 +249,6 @@ async function reactComment(commentId, action, postId) {
   });
   loadComments(postId);
 }
-window.addComment = addComment;
 window.reactComment = reactComment;
 
 async function loadFriends() {
@@ -386,6 +407,14 @@ async function loadExploreUsers() {
     if (expandedComments.has(postId)) expandedComments.delete(postId);
     else expandedComments.add(postId);
     loadComments(postId);
+  });
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target.closest("form.comment-form[data-post-id]");
+    if (!form) return;
+    const postId = String(form.dataset.postId || "");
+    if (!postId) return;
+    addComment(event, postId);
   });
 
   window.addEventListener("scroll", () => {

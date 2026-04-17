@@ -7,7 +7,9 @@ const postSchema = new mongoose.Schema(
     image: { type: String, required: true },
     imagePublicId: { type: String, unique: true, sparse: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+    dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    likesCount: { type: Number, default: 0 },
+    dislikesCount: { type: Number, default: 0 }
   },
   { timestamps: true, collection: "Posts" }
 );

@@ -4,7 +4,8 @@ const messageSchema = new mongoose.Schema({
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   messageText: { type: String, required: true, trim: true, maxlength: 1000 },
-  sentAt: { type: Date, default: Date.now }
+  sentAt: { type: Date, default: Date.now },
+  readAt: { type: Date, default: null }
 }, { collection: "Message" });
 
 messageSchema.index({ senderId: 1, receiverId: 1, sentAt: 1 });

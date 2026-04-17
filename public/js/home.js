@@ -12,6 +12,37 @@ const socket = io("/", { auth: { token: getToken() } });
 let page = 1;
 let hasMore = true;
 let isLoading = false;
+const expandedComments = new Set();
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return c;
+    }
+  });
+}
+
+// Helper functions
+function messageFriend(userId, username) {
+  window.location.href = `/chat?user=${userId}`;
+}
+window.messageFriend = messageFriend;
+
+function viewUserProfile(userId) {
+  window.location.href = `/profile?userId=${userId}`;
+}
+window.viewUserProfile = viewUserProfile;
 
 socket.on("connect", () => {
   console.log("Home socket connected");
@@ -59,20 +90,29 @@ const renderPost = (post) => `
     <div class="row post-head">
       <img class="avatar" src="${post.userId.profilePic}" alt="avatar" />
       <div>
-        <strong>${post.userId.username}</strong>
+        <strong>${escapeHtml(post.userId.username)}</strong>
         <div class="muted">${new Date(post.createdAt).toLocaleString()}</div>
       </div>
     </div>
-    <p>${post.caption}</p>
+    <p>${escapeHtml(post.caption)}</p>
     <img class="post-img" src="${post.image}" alt="post" />
     <div class="row post-actions">
-      <button onclick="react('${post._id}')">Like (${post.likes.length})</button>
+      <button class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
+        ${post.isLiked ? 'Unlike' : 'Like'} (${post.likesCount ?? post.likes?.length ?? 0})
+      </button>
+      <button class="btn-small ${post.isDisliked ? 'disliked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="dislike">
+        ${post.isDisliked ? 'Undislike' : 'Dislike'} (${post.dislikesCount ?? post.dislikes?.length ?? 0})
+      </button>
+      <button class="btn-small" data-action="open-comments" data-post-id="${post._id}">Comments</button>
+    </div>
+    <div class="comments-section">
+      <a href="#" id="toggle-comments-${post._id}" class="muted comment-toggle" data-action="toggle-comments" data-post-id="${post._id}" style="display:none;"></a>
+      <div id="comments-${post._id}" class="comment-list"></div>
     </div>
     <form class="comment-form" onsubmit="addComment(event, '${post._id}')">
       <input id="comment-${post._id}" placeholder="Add comment..." />
       <button type="submit">Comment</button>
     </form>
-    <div id="comments-${post._id}" class="comment-list"></div>
   </article>
 `;
 
@@ -94,25 +134,43 @@ async function loadPosts() {
   }
 }
 
-async function react(postId) {
-  await apiFetch(`/posts/${postId}/react`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "like" })
-  });
-  feed.innerHTML = "";
-  page = 1;
-  hasMore = true;
-  loadPosts();
+function updatePostReactionButtons(postId, state) {
+  const likeBtn = document.querySelector(`button[data-action="post-react"][data-post-id="${postId}"][data-react="like"]`);
+  const dislikeBtn = document.querySelector(`button[data-action="post-react"][data-post-id="${postId}"][data-react="dislike"]`);
+
+  if (likeBtn) {
+    likeBtn.classList.toggle("liked", !!state.isLiked);
+    likeBtn.textContent = `${state.isLiked ? "Unlike" : "Like"} (${state.likesCount ?? 0})`;
+  }
+  if (dislikeBtn) {
+    dislikeBtn.classList.toggle("disliked", !!state.isDisliked);
+    dislikeBtn.textContent = `${state.isDisliked ? "Undislike" : "Dislike"} (${state.dislikesCount ?? 0})`;
+  }
+}
+
+async function react(postId, action) {
+  try {
+    const response = await apiFetch(`/posts/${postId}/react`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action })
+    });
+    updatePostReactionButtons(postId, response);
+  } catch (error) {
+    console.error("Error reacting to post:", error);
+    alert(error.message || "Unable to react to post.");
+  }
 }
 
 async function addComment(e, postId) {
   e.preventDefault();
   const input = document.getElementById(`comment-${postId}`);
+  const text = (input?.value || "").trim();
+  if (!text) return;
   await apiFetch(`/comments/${postId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ commentText: input.value.trim() })
+    body: JSON.stringify({ commentText: text })
   });
   input.value = "";
   loadComments(postId);
@@ -120,17 +178,45 @@ async function addComment(e, postId) {
 }
 
 async function loadComments(postId) {
-  const comments = await apiFetch(`/comments/${postId}`);
-  const list = document.getElementById(`comments-${postId}`);
-  list.innerHTML = comments
-    .map(
-      (c) => `<div class="comment-item">
-        <strong>${c.userId.username}</strong> <span>${c.commentText}</span>
-        <button onclick="reactComment('${c._id}','like','${postId}')">Like (${c.likesCount || 0})</button>
-        <button onclick="reactComment('${c._id}','dislike','${postId}')">Dislike (${c.dislikesCount || 0})</button>
-      </div>`
-    )
-    .join("");
+  try {
+    const isExpanded = expandedComments.has(String(postId));
+    const query = isExpanded ? "sort=asc" : "sort=desc&limit=2";
+    const data = await apiFetch(`/comments/${postId}?${query}`);
+
+    // Backward compatible: older API returned an array, newer returns { total, comments }.
+    const total = Array.isArray(data) ? data.length : (data.total || 0);
+    const comments = Array.isArray(data) ? data : (Array.isArray(data.comments) ? data.comments : []);
+    const list = document.getElementById(`comments-${postId}`);
+    const toggle = document.getElementById(`toggle-comments-${postId}`);
+    if (!list) return;
+
+    const toRender = isExpanded ? comments : comments.slice().reverse();
+    list.innerHTML = toRender
+      .map(
+        (c) => `<div class="comment-item">
+          <strong>${escapeHtml(c.userId?.username || "User")}</strong>
+          <span>${escapeHtml(c.commentText)}</span>
+        </div>`
+      )
+      .join("");
+
+    if (toggle) {
+      if (total <= 0) {
+        toggle.style.display = "none";
+      } else if (isExpanded) {
+        toggle.style.display = "inline-block";
+        toggle.textContent = "Hide comments";
+      } else if (total > toRender.length) {
+        toggle.style.display = "inline-block";
+        toggle.textContent = `View all ${total} comments`;
+      } else {
+        toggle.style.display = "inline-block";
+        toggle.textContent = "View comments";
+      }
+    }
+  } catch (error) {
+    console.error("Error loading comments:", error);
+  }
 }
 
 async function reactComment(commentId, action, postId) {
@@ -141,6 +227,8 @@ async function reactComment(commentId, action, postId) {
   });
   loadComments(postId);
 }
+window.addComment = addComment;
+window.reactComment = reactComment;
 
 async function loadFriends() {
   try {
@@ -151,7 +239,7 @@ async function loadFriends() {
           <img class="avatar" src="${f.profilePic}" alt="${f.username}" />
           <div class="friend-info">
             <strong onclick="viewUserProfile('${f._id}')" style="cursor:pointer;">${f.username}</strong>
-            <button class="btn-small msg-btn" onclick="messageFriend('${f._id}', '${f.username}')">Message</button>
+            <a class="btn-small msg-btn" href="/chat?user=${f._id}">Message</a>
           </div>
         </div>
       `).join("");
@@ -163,6 +251,34 @@ async function loadFriends() {
     friendsList.innerHTML = '<p class="muted">Error loading friends</p>';
   }
 }
+
+async function loadNotifications() {
+  try {
+    const notifications = await apiFetch("/notifications");
+    if (!notificationsList) return;
+
+    if (!notifications.length) {
+      notificationsList.innerHTML = '<p class="muted" style="font-size:12px;">No notifications yet.</p>';
+      return;
+    }
+
+    notificationsList.innerHTML = notifications
+      .slice(0, 20)
+      .map((n) => {
+        const actor = n.actorId?.username || "Someone";
+        const action = n.type === "comment" ? "commented on" : "liked";
+        const when = new Date(n.createdAt).toLocaleString();
+        return `<div class="muted" style="font-size:12px; margin-bottom:8px;">
+          <strong>${actor}</strong> ${action} your post - ${when}
+        </div>`;
+      })
+      .join("");
+  } catch (error) {
+    console.error("Error loading notifications:", error);
+    if (notificationsList) notificationsList.innerHTML = '<p class="muted" style="font-size:12px;">Error loading notifications</p>';
+  }
+}
+window.loadNotifications = loadNotifications;
 
 async function loadExploreUsers() {
   try {
@@ -186,7 +302,7 @@ async function loadExploreUsers() {
               <p class="muted" style="font-size:12px;">${relationLabel} ${mutualLabel ? '• ' + mutualLabel : ''} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
               <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:6px;">
                 <a href="#" class="btn-small follow-btn" data-action="toggle-follow" data-user-id="${u._id}">${isFollowing ? 'Unfollow' : 'Follow'}</a>
-                ${canMessage ? `<button class="btn-small msg-btn" onclick="messageFriend('${u._id}', '${u.username}')">Message</button>` : ''}
+                <a class="btn-small msg-btn" href="/chat?user=${u._id}">Message</a>
               </div>
             </div>
           </div>
@@ -227,19 +343,50 @@ async function loadExploreUsers() {
     if (userId) await toggleFollow(userId, followLink);
   });
 
-  function messageFriend(userId, username) {
-    window.location.href = `/chat?user=${userId}`;
-  }
+  // Refresh friends/users quickly on first load, then slow down.
+  // Fast: every 3s for the first 6s, then every 30s.
+  let refreshIntervalId = null;
+  const startRefreshLoop = (ms) => {
+    if (refreshIntervalId) clearInterval(refreshIntervalId);
+    refreshIntervalId = setInterval(() => {
+      loadFriends();
+      loadExploreUsers();
+    }, ms);
+  };
 
-  function viewUserProfile(userId) {
-    window.location.href = `/profile?userId=${userId}`;
-  }
+  startRefreshLoop(3000);
+  setTimeout(() => startRefreshLoop(30000), 3000);
 
-  // Refresh friends and users every 30 seconds for real-time updates
-  setInterval(() => {
-    loadFriends();
-    loadExploreUsers();
-  }, 30000);
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest('button[data-action="post-react"][data-post-id][data-react]');
+    if (!btn) return;
+    const postId = btn.dataset.postId;
+    const action = btn.dataset.react;
+    if (!postId || !action) return;
+    react(postId, action);
+  });
+
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest('button[data-action="open-comments"][data-post-id]');
+    if (!btn) return;
+    const postId = String(btn.dataset.postId);
+    if (!postId) return;
+    expandedComments.add(postId);
+    loadComments(postId);
+    const input = document.getElementById(`comment-${postId}`);
+    input?.focus();
+  });
+
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest('a[data-action="toggle-comments"][data-post-id]');
+    if (!toggle) return;
+    event.preventDefault();
+    const postId = String(toggle.dataset.postId);
+    if (!postId) return;
+    if (expandedComments.has(postId)) expandedComments.delete(postId);
+    else expandedComments.add(postId);
+    loadComments(postId);
+  });
 
   window.addEventListener("scroll", () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 150) loadPosts();
@@ -249,6 +396,3 @@ async function loadExploreUsers() {
   loadNotifications();
   loadFriends();
   loadExploreUsers();
-
-  window.toggleFollow = toggleFollow;
-  window.viewUserProfile = viewUserProfile;

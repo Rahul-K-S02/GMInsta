@@ -5,7 +5,7 @@ const User = require("../models/User");
 
 const addComment = async (req, res, next) => {
   try {
-    const { commentText } = req.body;
+    const commentText = (req.body.commentText || "").trim();
     if (!commentText) return res.status(400).json({ message: "Comment is required" });
 
     const post = await Post.findById(req.params.postId);
@@ -32,9 +32,19 @@ const addComment = async (req, res, next) => {
 
 const getCommentsByPost = async (req, res, next) => {
   try {
-    const comments = await Comment.find({ postId: req.params.postId })
-      .sort({ createdAt: -1 })
-      .populate("userId", "username profilePic");
+    const sortParam = String(req.query.sort || "asc").toLowerCase();
+    const sort = sortParam === "desc" ? -1 : 1;
+    const limit = Math.max(0, Math.min(parseInt(req.query.limit || "0", 10) || 0, 200));
+    const skip = Math.max(0, parseInt(req.query.skip || "0", 10) || 0);
+
+    const [total, comments] = await Promise.all([
+      Comment.countDocuments({ postId: req.params.postId }),
+      Comment.find({ postId: req.params.postId })
+        .sort({ createdAt: sort })
+        .skip(skip)
+        .limit(limit || 0)
+        .populate("userId", "username profilePic")
+    ]);
 
     const normalized = comments.map((comment) => ({
       ...comment.toObject(),
@@ -42,7 +52,7 @@ const getCommentsByPost = async (req, res, next) => {
       dislikesCount: typeof comment.dislikesCount === "number" ? comment.dislikesCount : comment.dislikes.length
     }));
 
-    return res.json(normalized);
+    return res.json({ postId: req.params.postId, total, comments: normalized });
   } catch (error) {
     next(error);
   }

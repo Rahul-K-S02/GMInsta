@@ -46,13 +46,22 @@ const getFeed = async (req, res, next) => {
       .limit(limit)
       .populate("userId", "username profilePic");
 
+    const uid = req.user.id;
+    const postsWithLikeStatus = posts.map(post => ({
+      ...post.toObject(),
+      likesCount: typeof post.likesCount === "number" ? post.likesCount : post.likes.length,
+      dislikesCount: typeof post.dislikesCount === "number" ? post.dislikesCount : post.dislikes.length,
+      isLiked: post.likes.some(id => String(id) === uid),
+      isDisliked: post.dislikes.some(id => String(id) === uid)
+    }));
+
     const totalPosts = await Post.countDocuments();
     return res.json({
       page,
       limit,
       totalPosts,
       totalPages: Math.ceil(totalPosts / limit),
-      posts
+      posts: postsWithLikeStatus
     });
   } catch (error) {
     next(error);
@@ -62,30 +71,51 @@ const getFeed = async (req, res, next) => {
 const reactPost = async (req, res, next) => {
   try {
     const { action } = req.body;
-    if (action !== "like") return res.status(400).json({ message: "Invalid action" });
+    if (!["like", "dislike"].includes(action)) return res.status(400).json({ message: "Invalid action" });
 
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     const uid = req.user.id;
-    const isLiked = post.likes.some((id) => String(id) === uid);
+    const wasLiked = post.likes.some((id) => String(id) === uid);
+    const wasDisliked = post.dislikes.some((id) => String(id) === uid);
 
-    if (isLiked) {
-      // Unlike: remove from likes
-      post.likes = post.likes.filter((id) => String(id) !== uid);
+    if (action === "like") {
+      if (wasLiked) {
+        post.likes = post.likes.filter((id) => String(id) !== uid);
+      } else {
+        post.likes.addToSet(uid);
+        post.dislikes = post.dislikes.filter((id) => String(id) !== uid);
+      }
     } else {
-      // Like: add to likes
-      post.likes.push(uid);
+      if (wasDisliked) {
+        post.dislikes = post.dislikes.filter((id) => String(id) !== uid);
+      } else {
+        post.dislikes.addToSet(uid);
+        post.likes = post.likes.filter((id) => String(id) !== uid);
+      }
     }
 
+    post.likesCount = post.likes.length;
+    post.dislikesCount = post.dislikes.length;
     await post.save();
 
-    if (!isLiked && String(post.userId) !== uid) {
+    const isLiked = post.likes.some((id) => String(id) === uid);
+    const isDisliked = post.dislikes.some((id) => String(id) === uid);
+
+    if (action === "like" && !wasLiked && String(post.userId) !== uid) {
       const notification = await Notification.create({ userId: post.userId, actorId: uid, postId: post._id, type: "like" });
       await User.findByIdAndUpdate(post.userId, { $addToSet: { "links.notifications": notification._id } });
     }
 
-    return res.json({ message: "Reaction updated", likes: post.likes.length, isLiked: !isLiked });
+    return res.json({
+      message: "Reaction updated",
+      postId: post._id,
+      likesCount: post.likesCount,
+      dislikesCount: post.dislikesCount,
+      isLiked,
+      isDisliked
+    });
   } catch (error) {
     next(error);
   }

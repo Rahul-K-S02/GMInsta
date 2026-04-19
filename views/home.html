@@ -7,72 +7,109 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/public/css/style.css" />
+  <link rel="stylesheet" href="/public/css/app-ui.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="container topbar-inner">
+  <div class="app-panel">
+    <header class="shell-header">
       <a href="/home" class="brand">GMinsta</a>
-      <nav class="nav nav-pills">
-        <a href="/home" class="active">Home</a>
-        <a href="/discover">Discover</a>
-        <a href="/profile">Profile</a>
-        <a href="/chat">Messages</a>
-      </nav>
-      <div class="row topbar-actions">
-        <button id="themeBtn" class="btn-outline">Dark/Light</button>
-        <button id="logoutBtn" class="btn-danger">Logout</button>
+      <div class="shell-header-actions">
+        <button id="themeBtn" class="header-chip" type="button">Theme</button>
+        <button id="logoutBtn" class="header-chip header-chip-danger" type="button">Logout</button>
+        <a href="/profile" class="header-icon" aria-label="Profile">
+          <span class="header-avatar">G</span>
+        </a>
       </div>
+    </header>
+
+    <div class="shell-body app-shell">
+      <aside class="shell-sidebar">
+        <nav class="shell-nav">
+          <a href="/home" class="nav-link active">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg></span>
+            <span>Home</span>
+          </a>
+          <a href="/discover" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg></span>
+            <span>Explore</span>
+          </a>
+          <a href="/discover" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg></span>
+            <span>Reels</span>
+          </a>
+          <a href="#create-post" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg></span>
+            <span>Create</span>
+          </a>
+          <a href="/chat" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5c0 4.1-3.8 7.5-8.5 7.5-1.2 0-2.4-.2-3.4-.7L4 20l1.4-3.4C4.5 15.3 4 13.5 4 11.5 4 7.4 7.8 4 12.5 4S21 7.4 21 11.5z"/></svg></span>
+            <span>Chat</span>
+          </a>
+          <a href="/profile" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.3 4-5 7-5s5.5 1.7 7 5"/></svg></span>
+            <span>Profile</span>
+          </a>
+        </nav>
+      </aside>
+
+      <section class="feed-column">
+        <div class="feed-switch card">
+          <button class="feed-switch-btn active" type="button">For You</button>
+          <button class="feed-switch-btn" type="button">Following</button>
+        </div>
+
+        <div id="create-post" class="card composer composer-inline">
+          <div class="composer-copy">
+            <h3>Create a New Post</h3>
+            <p>Share a photo, write a caption, and post it straight to your feed.</p>
+          </div>
+          <form id="postForm" class="composer-form">
+            <input name="caption" placeholder="Write a caption..." required />
+            <div class="composer-upload-row">
+              <input id="postImage" name="image" type="file" accept="image/*" required />
+              <button type="submit">Share Post</button>
+            </div>
+            <img id="imagePreview" class="preview" style="display:none;" alt="preview" />
+          </form>
+        </div>
+
+        <div id="feed"></div>
+      </section>
+
+      <aside class="right-rail">
+        <div class="card account-card">
+          <div class="row account-row">
+            <span id="homeProfileAvatar" class="avatar avatar-text">G</span>
+            <div>
+              <strong id="homeProfileName">Your profile</strong>
+              <div id="homeProfileHandle" class="muted">View your updates</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h3>Suggested for you</h3>
+          </div>
+          <div id="exploreUsers" class="users-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h3>Your circle</h3>
+          </div>
+          <div id="friendsList" class="users-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h3>Notifications</h3>
+          </div>
+          <div id="notifications" class="notifications-list muted"></div>
+        </div>
+      </aside>
     </div>
-  </header>
-
-  <main class="container app-shell">
-    <aside class="left-rail card">
-      <div class="sidebar-section">
-        <h4>Quick Menu</h4>
-        <a href="/home" class="rail-link active">Home Feed</a>
-        <a href="/discover" class="rail-link">Discover</a>
-        <a href="/profile" class="rail-link">My Profile</a>
-        <a href="/chat" class="rail-link">Direct Messages</a>
-      </div>
-      
-      <div class="sidebar-section">
-        <h4>👥 My Friends</h4>
-        <div id="friendsList" class="users-list"></div>
-      </div>
-      
-      <div class="sidebar-section">
-        <h4>✨ Suggested Users</h4>
-        <div id="exploreUsers" class="users-list"></div>
-      </div>
-    </aside>
-
-    <section class="feed-column">
-      <div class="stories card">
-        <div class="story active">You</div>
-        <div class="story">Creators</div>
-        <div class="story">Friends</div>
-        <div class="story">Explore</div>
-      </div>
-
-      <div class="card composer">
-        <h3>Create Post</h3>
-        <form id="postForm">
-          <input name="caption" placeholder="Write a caption..." required />
-          <input id="postImage" name="image" type="file" accept="image/*" required />
-          <img id="imagePreview" class="preview" style="display:none;" alt="preview" />
-          <button type="submit">Share</button>
-        </form>
-      </div>
-
-      <div id="feed"></div>
-    </section>
-
-    <aside class="right-rail card">
-      <h3>Notifications</h3>
-      <div id="notifications" class="muted"></div>
-    </aside>
-  </main>
+  </div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>

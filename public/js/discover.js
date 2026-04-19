@@ -32,8 +32,8 @@ async function loadDiscoverUsers() {
             <div class="user-info">
               <strong onclick="viewUserProfile('${u._id}')" style="cursor:pointer;">${u.username}</strong>
               <p class="muted" style="font-size:12px; margin:4px 0;">${u.bio || 'No bio'}</p>
-              <p class="muted" style="font-size:12px;">${relationLabel} ${mutualLabel ? '• ' + mutualLabel : ''} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
-              <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <p class="muted" style="font-size:12px;">${relationLabel}${mutualLabel ? ` • ${mutualLabel}` : ""} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
+              <div class="user-actions">
                 <a href="#" class="btn-small follow-btn" data-action="toggle-follow" data-user-id="${u._id}">${isFollowing ? 'Unfollow' : 'Follow'}</a>
                 ${canMessage ? `<button class="btn-small msg-btn" onclick="messageFriend('${u._id}', '${u.username}')">Message</button>` : ''}
               </div>

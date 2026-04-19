@@ -5,7 +5,9 @@ const chatBox = document.getElementById("chatBox");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageText");
 const chatTitle = document.getElementById("chatTitle");
-const me = getMe();
+const chatSubtitle = document.getElementById("chatSubtitle");
+const chatEmptyState = document.getElementById("chatEmptyState");
+const me = getMe() || {};
 let currentReceiverId = null;
 let currentReceiverName = "";
 const urlParams = new URLSearchParams(window.location.search);
@@ -17,6 +19,16 @@ document.getElementById("logoutBtn")?.addEventListener("click", () => {
 });
 
 const socket = io("/", { auth: { token: getToken() } });
+
+function setChatStage(hasConversation) {
+  if (chatBox) chatBox.style.display = hasConversation ? "block" : "none";
+  if (chatForm) chatForm.style.display = hasConversation ? "flex" : "none";
+  if (chatEmptyState) chatEmptyState.style.display = hasConversation ? "none" : "grid";
+  if (!hasConversation) {
+    chatTitle.textContent = "Your Messages";
+    if (chatSubtitle) chatSubtitle.textContent = "Select a conversation to start chatting";
+  }
+}
 
 socket.on("message_received", (msg) => {
   const senderId = String(msg.senderId._id);
@@ -75,6 +87,7 @@ async function renderConversations() {
     const conversations = await getConversationSummaries();
     if (!conversations.length) {
       conversationsList.innerHTML = '<p class="muted" style="font-size:12px;">No conversations yet. Start a chat with a friend.</p>';
+      setChatStage(false);
       return conversations;
     }
 
@@ -176,14 +189,17 @@ async function selectFriend(userId, username) {
     currentReceiverId = userId;
     currentReceiverName = username;
     chatTitle.textContent = `Chat with ${username}`;
+    if (chatSubtitle) chatSubtitle.textContent = "Active conversation";
     const messages = await apiFetch(`/messages/${userId}`);
     chatBox.innerHTML = "";
     messages.forEach(renderMessage);
+    setChatStage(true);
     messageInput.focus();
     await loadFriends();
   } catch (error) {
     console.error("Error selecting friend:", error);
     chatBox.innerHTML = '<p class="muted">Error loading messages</p>';
+    setChatStage(true);
   }
 }
 
@@ -231,6 +247,8 @@ renderConversations().then(() => {
     autoOpenRecentConversation();
   }
 });
+
+setChatStage(false);
 
 // Auto-select friend from URL parameter
 if (userParam) {

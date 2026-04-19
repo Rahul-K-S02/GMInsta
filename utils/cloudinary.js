@@ -1,3 +1,4 @@
+require("dotenv").config();
 const cloudinary = require("../config/cloudinary");
 
 const isPlaceholderValue = (value) => {
@@ -19,11 +20,21 @@ const ensureCloudinaryEnv = () => {
 
 const uploadBufferToCloudinary = ({ buffer, publicId, overwrite = false, invalidate = false }) =>
   new Promise((resolve, reject) => {
+    if (!buffer || !Buffer.isBuffer(buffer)) {
+      return reject(new Error("Missing image buffer for Cloudinary upload."));
+    }
+    if (!publicId || typeof publicId !== "string") {
+      return reject(new Error("Missing publicId for Cloudinary upload."));
+    }
+
     ensureCloudinaryEnv();
+    const normalizedPublicId = publicId.replace(/^\/+/, "");
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         resource_type: "image",
-        public_id: publicId,
+        public_id: normalizedPublicId,
+        use_filename: false,
+        unique_filename: false,
         overwrite,
         invalidate
       },
@@ -35,10 +46,28 @@ const uploadBufferToCloudinary = ({ buffer, publicId, overwrite = false, invalid
     uploadStream.end(buffer);
   });
 
+const buildOptimizedImageUrl = ({ publicId, fallbackUrl }) => {
+  if (publicId) {
+    try {
+      ensureCloudinaryEnv();
+      return cloudinary.url(publicId, {
+        secure: true,
+        resource_type: "image",
+        fetch_format: "auto",
+        quality: "auto"
+      });
+    } catch (error) {
+      return fallbackUrl || "/public/images/default-avatar.svg";
+    }
+  }
+
+  return fallbackUrl || "/public/images/default-avatar.svg";
+};
+
 const deleteFromCloudinary = async (publicId) => {
   if (!publicId) return;
   ensureCloudinaryEnv();
   await cloudinary.uploader.destroy(publicId, { resource_type: "image", invalidate: true });
 };
 
-module.exports = { uploadBufferToCloudinary, deleteFromCloudinary };
+module.exports = { uploadBufferToCloudinary, buildOptimizedImageUrl, deleteFromCloudinary };

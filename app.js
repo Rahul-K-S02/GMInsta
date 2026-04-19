@@ -56,16 +56,29 @@ app.use((req, res) => {
 });
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`GMinsta server running on http://localhost:${PORT}`);
-});
+const DEFAULT_PORT = parseInt(process.env.PORT || "5000", 10);
+let currentPort = DEFAULT_PORT;
+
+const startServer = (port) => {
+  server.listen(port, () => {
+    console.log(`GMinsta server running on http://localhost:${port}`);
+  });
+};
 
 server.on("error", (error) => {
   if (error.syscall !== "listen") throw error;
   if (error.code === "EADDRINUSE") {
-    console.error(`Port ${PORT} is already in use. Please stop the process using it or set a different PORT.`);
+    if (currentPort === DEFAULT_PORT) {
+      const fallbackPort = 5001;
+      console.warn(`Port ${currentPort} is already in use; trying fallback port ${fallbackPort}...`);
+      currentPort = fallbackPort;
+      startServer(currentPort);
+      return;
+    }
+    console.error(`Port ${currentPort} is already in use. Please stop the process using it or set a different PORT.`);
     process.exit(1);
   }
   throw error;
 });
+
+startServer(currentPort);

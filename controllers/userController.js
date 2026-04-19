@@ -1,8 +1,30 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
-const { uploadBufferToCloudinary } = require("../utils/cloudinary");
+const { uploadBufferToCloudinary, buildOptimizedImageUrl } = require("../utils/cloudinary");
+
+const normalizeUserImage = (user) => {
+  if (!user) return user;
+
+  return {
+    ...user,
+    profilePic: buildOptimizedImageUrl({
+      publicId: user.profilePicPublicId,
+      fallbackUrl: user.profilePic
+    })
+  };
+};
+
+const normalizeProfilePayload = (user) => {
+  if (!user) return user;
+
+  const normalized = normalizeUserImage(user);
+  if (Array.isArray(normalized.followers)) normalized.followers = normalized.followers.map(normalizeUserImage);
+  if (Array.isArray(normalized.following)) normalized.following = normalized.following.map(normalizeUserImage);
+  return normalized;
+};
 
 const buildUserResponse = (u, currentUserId, currentFollowingIds) => {
+  const normalizedUser = normalizeUserImage(u);
   const followersCount = Array.isArray(u.followers) ? u.followers.length : 0;
   const followingCount = Array.isArray(u.following) ? u.following.length : 0;
   const isFollowing = currentUserId ? u.followers.map(String).includes(currentUserId) : false;
@@ -12,11 +34,11 @@ const buildUserResponse = (u, currentUserId, currentFollowingIds) => {
     : 0;
 
   return {
-    _id: u._id,
-    username: u.username,
-    email: u.email,
-    profilePic: u.profilePic,
-    bio: u.bio,
+    _id: normalizedUser._id,
+    username: normalizedUser.username,
+    email: normalizedUser.email,
+    profilePic: normalizedUser.profilePic,
+    bio: normalizedUser.bio,
     followersCount,
     followingCount,
     isFollowing,
@@ -27,8 +49,8 @@ const buildUserResponse = (u, currentUserId, currentFollowingIds) => {
 
 const getMyProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select("-password").populate("followers following", "username profilePic");
-    return res.json(user);
+    const user = await User.findById(req.user.id).select("-password").populate("followers following", "username profilePic profilePicPublicId");
+    return res.json(normalizeProfilePayload(user.toObject()));
   } catch (error) {
     next(error);
   }
@@ -47,12 +69,12 @@ const updateProfile = async (req, res, next) => {
         overwrite: true,
         invalidate: true
       });
-      updates.profilePic = uploadedImage.secure_url;
+      updates.profilePic = buildOptimizedImageUrl({ publicId: uploadedImage.public_id, fallbackUrl: uploadedImage.secure_url });
       updates.profilePicPublicId = uploadedImage.public_id;
     }
 
     const updated = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select("-password");
-    return res.json({ message: "Profile updated", user: updated });
+    return res.json({ message: "Profile updated", user: normalizeUserImage(updated.toObject()) });
   } catch (error) {
     next(error);
   }
@@ -89,7 +111,7 @@ const followOrUnfollow = async (req, res, next) => {
       const followPayload = {
         userId: target._id,
         username: target.username,
-        profilePic: target.profilePic,
+        profilePic: buildOptimizedImageUrl({ publicId: target.profilePicPublicId, fallbackUrl: target.profilePic }),
         followersCount: target.followers.length,
         followingCount: target.following.length,
         isFollowing: !alreadyFollowing,
@@ -103,7 +125,7 @@ const followOrUnfollow = async (req, res, next) => {
           me: {
             _id: me._id,
             username: me.username,
-            profilePic: me.profilePic,
+            profilePic: buildOptimizedImageUrl({ publicId: me.profilePicPublicId, fallbackUrl: me.profilePic }),
             followersCount: me.followers.length,
             followingCount: me.following.length
           }
@@ -120,14 +142,14 @@ const followOrUnfollow = async (req, res, next) => {
       me: {
         _id: me._id,
         username: me.username,
-        profilePic: me.profilePic,
+        profilePic: buildOptimizedImageUrl({ publicId: me.profilePicPublicId, fallbackUrl: me.profilePic }),
         following: me.following,
         followers: me.followers
       },
       target: {
         _id: target._id,
         username: target.username,
-        profilePic: target.profilePic,
+        profilePic: buildOptimizedImageUrl({ publicId: target.profilePicPublicId, fallbackUrl: target.profilePic }),
         followersCount: target.followers.length,
         followingCount: target.following.length
       }
@@ -142,9 +164,9 @@ const getUserProfile = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
-    const user = await User.findById(req.params.userId).select("-password").populate("followers following", "username profilePic");
+    const user = await User.findById(req.params.userId).select("-password").populate("followers following", "username profilePic profilePicPublicId");
     if (!user) return res.status(404).json({ message: "User not found" });
-    return res.json(user);
+    return res.json(normalizeProfilePayload(user.toObject()));
   } catch (error) {
     next(error);
   }
@@ -160,7 +182,7 @@ const searchUsers = async (req, res, next) => {
     const currentFollowingIds = new Set((currentUser?.following || []).map(String));
 
     const users = await User.find(query)
-      .select("username email profilePic bio followers following")
+      .select("username email profilePic profilePicPublicId bio followers following")
       .limit(50)
       .lean();
 
@@ -185,6 +207,7 @@ const discoverUsers = async (req, res, next) => {
           username: 1,
           email: 1,
           profilePic: 1,
+          profilePicPublicId: 1,
           bio: 1,
           followersCount: { $size: { $ifNull: ["$followers", []] } },
           followingCount: { $size: { $ifNull: ["$following", []] } },
@@ -204,7 +227,15 @@ const discoverUsers = async (req, res, next) => {
       { $limit: limit }
     ]).allowDiskUse(true);
 
-    return res.json(users);
+    return res.json(
+      users.map((user) => ({
+        ...user,
+        profilePic: buildOptimizedImageUrl({
+          publicId: user.profilePicPublicId,
+          fallbackUrl: user.profilePic
+        })
+      }))
+    );
   } catch (error) {
     next(error);
   }

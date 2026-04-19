@@ -6,13 +6,22 @@ const feed = document.getElementById("feed");
 const notificationsList = document.getElementById("notifications");
 const friendsList = document.getElementById("friendsList");
 const exploreUsers = document.getElementById("exploreUsers");
-const me = getMe();
+const me = getMe() || {};
 const socket = io("/", { auth: { token: getToken() } });
 
 let page = 1;
 let hasMore = true;
 let isLoading = false;
 const expandedComments = new Set();
+
+function renderHomeProfileCard() {
+  const name = document.getElementById("homeProfileName");
+  const handle = document.getElementById("homeProfileHandle");
+  const avatar = document.getElementById("homeProfileAvatar");
+  if (name) name.textContent = me.username || "Your profile";
+  if (handle) handle.textContent = me.email || "View your updates";
+  if (avatar) avatar.textContent = String(me.username || "G").charAt(0).toUpperCase();
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => {
@@ -85,18 +94,22 @@ postForm?.addEventListener("submit", async (e) => {
   }
 });
 
-const renderPost = (post) => `
+const renderPost = (post) => {
+  const imageUrl = post.image || '/public/images/default-avatar.svg';
+  console.log('Rendering post image:', post._id, imageUrl);
+  return `
   <article class="card post-card">
     <div class="row post-head">
-      <img class="avatar" src="${post.userId.profilePic}" alt="avatar" />
+      <img class="avatar" src="${post.userId?.profilePic || '/public/images/default-avatar.svg'}" alt="avatar" onerror="console.error('Avatar load failed:', this.src); this.src='/public/images/default-avatar.svg'" />
       <div>
-        <strong>${escapeHtml(post.userId.username)}</strong>
+        <strong>${escapeHtml(post.userId?.username || 'Unknown')}</strong>
         <div class="muted">${new Date(post.createdAt).toLocaleString()}</div>
       </div>
     </div>
     <p>${escapeHtml(post.caption)}</p>
-    <img class="post-img" src="${post.image}" alt="post" />
-    <div class="row post-actions">
+    <img class="post-img" src="${imageUrl}" alt="post" onerror="console.error('Post image load failed:', this.src); this.src='/public/images/default-avatar.svg'" />
+    <div class="row post-actions">`;
+};
       <button type="button" class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
         ${post.isLiked ? 'Unlike' : 'Like'} (${post.likesCount ?? post.likes?.length ?? 0})
       </button>
@@ -116,11 +129,30 @@ const renderPost = (post) => `
   </article>
 `;
 
+const renderEmptyFeed = () => `
+  <div class="card empty-state">
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h2l1.2-2h3.6L15 7h2a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/></svg>
+    </div>
+    <div>
+      <h3>No Posts Yet</h3>
+      <p>Be the first to share a moment!</p>
+    </div>
+    <button type="button" onclick="document.getElementById('create-post')?.scrollIntoView({ behavior: 'smooth' })">Create Post</button>
+  </div>
+`;
+
 async function loadPosts() {
   if (!hasMore || isLoading) return;
   isLoading = true;
   try {
     const data = await apiFetch(`/posts?page=${page}&limit=5`);
+    console.log('Loaded feed page', page, 'posts', data.posts?.length, 'images', data.posts?.map(p => p.image));
+    if (page === 1 && (!data.posts || !data.posts.length)) {
+      feed.innerHTML = renderEmptyFeed();
+      hasMore = false;
+      return;
+    }
     data.posts.forEach((post) => {
       feed.insertAdjacentHTML("beforeend", renderPost(post));
       loadComments(post._id);
@@ -260,6 +292,7 @@ async function loadFriends() {
           <img class="avatar" src="${f.profilePic}" alt="${f.username}" />
           <div class="friend-info">
             <strong onclick="viewUserProfile('${f._id}')" style="cursor:pointer;">${f.username}</strong>
+            <div class="muted">Friend</div>
             <a class="btn-small msg-btn" href="/chat?user=${f._id}">Message</a>
           </div>
         </div>
@@ -289,8 +322,12 @@ async function loadNotifications() {
         const actor = n.actorId?.username || "Someone";
         const action = n.type === "comment" ? "commented on" : "liked";
         const when = new Date(n.createdAt).toLocaleString();
-        return `<div class="muted" style="font-size:12px; margin-bottom:8px;">
-          <strong>${actor}</strong> ${action} your post - ${when}
+        return `<div class="notification-item">
+          <div>
+            <strong>${actor}</strong>
+            <div class="muted">${action} your post</div>
+            <div class="muted">${when}</div>
+          </div>
         </div>`;
       })
       .join("");
@@ -320,8 +357,8 @@ async function loadExploreUsers() {
             <div class="user-info">
               <strong onclick="viewUserProfile('${u._id}')" style="cursor:pointer;">${u.username}</strong>
               <p class="muted" style="font-size:12px; margin:4px 0;">${u.bio || 'No bio'}</p>
-              <p class="muted" style="font-size:12px;">${relationLabel} ${mutualLabel ? '• ' + mutualLabel : ''} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
-              <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:6px;">
+              <p class="muted" style="font-size:12px;">${relationLabel}${mutualLabel ? ` • ${mutualLabel}` : ""} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
+              <div class="user-actions">
                 <a href="#" class="btn-small follow-btn" data-action="toggle-follow" data-user-id="${u._id}">${isFollowing ? 'Unfollow' : 'Follow'}</a>
                 <a class="btn-small msg-btn" href="/chat?user=${u._id}">Message</a>
               </div>
@@ -421,6 +458,7 @@ async function loadExploreUsers() {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 150) loadPosts();
   });
 
+  renderHomeProfileCard();
   loadPosts();
   loadNotifications();
   loadFriends();

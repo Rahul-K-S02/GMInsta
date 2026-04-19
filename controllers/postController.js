@@ -2,7 +2,27 @@ const Post = require("../models/Post");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const mongoose = require("mongoose");
-const { uploadBufferToCloudinary, deleteFromCloudinary } = require("../utils/cloudinary");
+const { uploadBufferToCloudinary, buildOptimizedImageUrl, deleteFromCloudinary } = require("../utils/cloudinary");
+
+const normalizePostImage = (post) => ({
+  ...post,
+  image:
+    post.image ||
+    buildOptimizedImageUrl({ publicId: post.imagePublicId, fallbackUrl: post.image }) ||
+    "/public/images/default-avatar.svg",
+  userId: post.userId
+    ? {
+        ...post.userId,
+        profilePic:
+          post.userId.profilePic ||
+          buildOptimizedImageUrl({
+            publicId: post.userId.profilePicPublicId,
+            fallbackUrl: post.userId.profilePic
+          }) ||
+          "/public/images/default-avatar.svg"
+      }
+    : { username: "Unknown", profilePic: "/public/images/default-avatar.svg" }
+});
 
 const createPost = async (req, res, next) => {
   let imagePublicId = null;
@@ -12,7 +32,7 @@ const createPost = async (req, res, next) => {
     if (!caption) return res.status(400).json({ message: "Caption is required" });
 
     const postId = new mongoose.Types.ObjectId();
-    imagePublicId = `posts/${req.user.id}/${postId.toString()}`;
+    imagePublicId = `posts/${postId.toString()}`;
     const uploadedImage = await uploadBufferToCloudinary({
       buffer: req.file.buffer,
       publicId: imagePublicId
@@ -30,6 +50,25 @@ const createPost = async (req, res, next) => {
     return res.status(201).json(post);
   } catch (error) {
     if (imagePublicId) await deleteFromCloudinary(imagePublicId).catch(() => {});
+
+    console.error("Post upload failed", {
+      userId: req.user?.id,
+      postId: req.params?.postId,
+      imagePublicId,
+      fileName: req.file?.originalname,
+      caption: req.body?.caption,
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message: "Image upload failed.",
+        details: error.message
+      });
+    }
+
     next(error);
   }
 };
@@ -44,11 +83,11 @@ const getFeed = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("userId", "username profilePic");
+      .populate("userId", "username profilePic profilePicPublicId");
 
     const uid = req.user.id;
     const postsWithLikeStatus = posts.map(post => ({
-      ...post.toObject(),
+      ...normalizePostImage(post.toObject()),
       likesCount: typeof post.likesCount === "number" ? post.likesCount : post.likes.length,
       dislikesCount: typeof post.dislikesCount === "number" ? post.dislikesCount : post.dislikes.length,
       isLiked: post.likes.some(id => String(id) === uid),

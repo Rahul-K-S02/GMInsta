@@ -18,7 +18,13 @@ const ensureCloudinaryEnv = () => {
   }
 };
 
-const uploadBufferToCloudinary = ({ buffer, publicId, overwrite = false, invalidate = false }) =>
+const uploadBufferToCloudinary = ({
+  buffer,
+  publicId,
+  overwrite = false,
+  invalidate = false,
+  resourceType = "image"
+}) =>
   new Promise((resolve, reject) => {
     if (!buffer || !Buffer.isBuffer(buffer)) {
       return reject(new Error("Missing image buffer for Cloudinary upload."));
@@ -31,7 +37,7 @@ const uploadBufferToCloudinary = ({ buffer, publicId, overwrite = false, invalid
     const normalizedPublicId = publicId.replace(/^\/+/, "");
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        resource_type: "image",
+        resource_type: resourceType,
         public_id: normalizedPublicId,
         use_filename: false,
         unique_filename: false,
@@ -46,13 +52,13 @@ const uploadBufferToCloudinary = ({ buffer, publicId, overwrite = false, invalid
     uploadStream.end(buffer);
   });
 
-const buildOptimizedImageUrl = ({ publicId, fallbackUrl }) => {
+const buildOptimizedAssetUrl = ({ publicId, fallbackUrl, resourceType = "image" }) => {
   if (publicId) {
     try {
       ensureCloudinaryEnv();
       return cloudinary.url(publicId, {
         secure: true,
-        resource_type: "image",
+        resource_type: resourceType,
         fetch_format: "auto",
         quality: "auto"
       });
@@ -64,10 +70,25 @@ const buildOptimizedImageUrl = ({ publicId, fallbackUrl }) => {
   return fallbackUrl || "/public/images/default-avatar.svg";
 };
 
-const deleteFromCloudinary = async (publicId) => {
+const buildOptimizedImageUrl = ({ publicId, fallbackUrl }) =>
+  buildOptimizedAssetUrl({ publicId, fallbackUrl, resourceType: "image" });
+
+const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   if (!publicId) return;
   ensureCloudinaryEnv();
-  await cloudinary.uploader.destroy(publicId, { resource_type: "image", invalidate: true });
+  await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
 };
 
-module.exports = { uploadBufferToCloudinary, buildOptimizedImageUrl, deleteFromCloudinary };
+const getCloudinaryResource = async (publicId, resourceType = "image") => {
+  if (!publicId) throw new Error("Missing publicId for Cloudinary lookup.");
+  ensureCloudinaryEnv();
+  return cloudinary.api.resource(publicId, { resource_type: resourceType });
+};
+
+module.exports = {
+  uploadBufferToCloudinary,
+  buildOptimizedAssetUrl,
+  buildOptimizedImageUrl,
+  deleteFromCloudinary,
+  getCloudinaryResource
+};

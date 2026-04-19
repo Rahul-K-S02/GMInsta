@@ -95,8 +95,13 @@ postForm?.addEventListener("submit", async (e) => {
 });
 
 const renderPost = (post) => {
-  const imageUrl = post.image || '/public/images/default-avatar.svg';
-  console.log('Rendering post image:', post._id, imageUrl);
+  const mediaType = post.mediaType || "image";
+  const mediaUrl = post.mediaUrl || post.image || "/public/images/default-avatar.svg";
+  console.log("Rendering post media:", post._id, mediaType, mediaUrl);
+  const mediaMarkup =
+    mediaType === "video"
+      ? `<video class="post-video" src="${mediaUrl}" controls playsinline preload="metadata"></video>`
+      : `<img class="post-img" src="${mediaUrl}" alt="post" onerror="console.error('Post image load failed:', this.src); this.src='/public/images/default-avatar.svg'" />`;
   return `
   <article class="card post-card">
     <div class="row post-head">
@@ -107,9 +112,8 @@ const renderPost = (post) => {
       </div>
     </div>
     <p>${escapeHtml(post.caption)}</p>
-    <img class="post-img" src="${imageUrl}" alt="post" onerror="console.error('Post image load failed:', this.src); this.src='/public/images/default-avatar.svg'" />
-    <div class="row post-actions">`;
-};
+    ${mediaMarkup}
+    <div class="row post-actions">
       <button type="button" class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
         ${post.isLiked ? 'Unlike' : 'Like'} (${post.likesCount ?? post.likes?.length ?? 0})
       </button>
@@ -128,6 +132,7 @@ const renderPost = (post) => {
     </form>
   </article>
 `;
+};
 
 const renderEmptyFeed = () => `
   <div class="card empty-state">
@@ -138,7 +143,7 @@ const renderEmptyFeed = () => `
       <h3>No Posts Yet</h3>
       <p>Be the first to share a moment!</p>
     </div>
-    <button type="button" onclick="document.getElementById('create-post')?.scrollIntoView({ behavior: 'smooth' })">Create Post</button>
+    <button type="button" onclick="window.location.href='/create'">Create Post</button>
   </div>
 `;
 

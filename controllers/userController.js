@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const { uploadBufferToCloudinary, buildOptimizedImageUrl } = require("../utils/cloudinary");
+const { isAdminEmail } = require("../utils/admin");
 
 const normalizeUserImage = (user) => {
   if (!user) return user;
@@ -50,7 +51,8 @@ const buildUserResponse = (u, currentUserId, currentFollowingIds) => {
 const getMyProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("-password").populate("followers following", "username profilePic profilePicPublicId");
-    return res.json(normalizeProfilePayload(user.toObject()));
+    const payload = normalizeProfilePayload(user.toObject());
+    return res.json({ ...payload, isAdmin: isAdminEmail(payload?.email) });
   } catch (error) {
     next(error);
   }

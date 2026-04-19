@@ -12,27 +12,80 @@
 <body>
   <main class="auth-layout">
     <section class="auth-visual">
-      <div class="phone-frame">
-        <div class="phone-notch"></div>
-        <div class="phone-screen">
-          <div class="story-row">
-            <span class="story-dot"></span>
-            <span class="story-dot"></span>
-            <span class="story-dot"></span>
+      <div class="auth-hero">
+        <div class="auth-hero-top">
+          <div class="auth-hero-brand">
+            <span class="auth-logo-dot" aria-hidden="true"></span>
+            <span class="brand">GMinsta</span>
           </div>
-          <div class="fake-post"></div>
-          <div class="fake-post small"></div>
+          <div class="auth-hero-links">
+            <a class="header-chip" href="/">Log in</a>
+            <a class="header-chip" href="/register">Sign up</a>
+          </div>
+        </div>
+
+        <div class="auth-badge">Your Campus. Your Community.</div>
+        <h2 class="auth-hero-title">
+          The Social Platform
+          <span class="auth-hero-gradient">Built for Campus</span>
+        </h2>
+        <p class="auth-hero-copy">Create an account to share posts, upload reels, and chat with your campus.</p>
+
+        <div class="auth-feature-grid">
+          <div class="auth-feature">
+            <div class="auth-feature-icon">></div>
+            <div>
+              <strong>Campus Reels</strong>
+              <div class="muted">Videos stored on Cloudinary.</div>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <div class="auth-feature-icon">MSG</div>
+            <div>
+              <strong>Group Chats</strong>
+              <div class="muted">Talk to followers & friends.</div>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <div class="auth-feature-icon">FEED</div>
+            <div>
+              <strong>Feed</strong>
+              <div class="muted">Photos and updates instantly.</div>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <div class="auth-feature-icon">GO</div>
+            <div>
+              <strong>Explore</strong>
+              <div class="muted">Discover people nearby.</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
     <section class="auth-form-wrap">
       <div class="card auth-card">
-        <h1 class="brand auth-brand">GMinsta</h1>
+        <div class="auth-head">
+          <h1 class="brand auth-brand">GMinsta</h1>
+          <p class="auth-subtitle">Create your account and start posting today.</p>
+        </div>
         <form id="registerForm">
-          <input id="username" type="text" placeholder="Username" required />
-          <input id="email" type="email" placeholder="Email" required />
-          <input id="password" type="password" placeholder="Password" required />
-          <button type="submit">Sign up</button>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="e.g. ram_07" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="name@example.com" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="input-with-btn">
+              <input id="password" type="password" placeholder="Create a password" autocomplete="new-password" required />
+              <button class="icon-btn pw-toggle" type="button" data-target="password">Show</button>
+            </div>
+          </div>
+          <button class="primary-btn" type="submit">Create account</button>
         </form>
         <p id="message"></p>
       </div>
@@ -42,6 +95,7 @@
     </section>
   </main>
   <script src="/public/js/api.js"></script>
+  <script src="/public/js/theme.js"></script>
   <script src="/public/js/auth.js"></script>
 </body>
 </html>

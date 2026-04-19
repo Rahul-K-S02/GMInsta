@@ -18,6 +18,7 @@ const postRoutes = require("./routes/postRoutes");
 const commentRoutes = require("./routes/commentRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const eventRoutes = require("./routes/eventRoutes");
 const viewRoutes = require("./routes/viewRoutes");
 
 const app = express();
@@ -33,7 +34,34 @@ connectDB();
 setupSocket(io);
 app.set("io", io);
 
-app.use(helmet({ crossOriginResourcePolicy: false }));
+// Helmet's default CSP is strict and blocks `blob:` (local previews) and external image hosts
+// like Cloudinary. Configure CSP explicitly so image previews and uploaded post images render.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        // Allow Cloudinary (https) and browser previews (blob/data) for images.
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        // Allow Cloudinary videos and local previews for reels.
+        mediaSrc: ["'self'", "blob:", "https:"],
+        // Socket.io and API calls; allow ws/wss for local sockets.
+        connectSrc: ["'self'", "ws:", "wss:", "https:"],
+        // App ships scripts from self; allow inline handlers used in a few templates.
+        scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
+        // Allow inline styles used across templates.
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        fontSrc: ["'self'", "data:", "https:"],
+        upgradeInsecureRequests: null
+      }
+    }
+  })
+);
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -48,6 +76,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/events", eventRoutes);
 
 app.use("/", viewRoutes);
 

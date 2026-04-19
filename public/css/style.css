@@ -414,6 +414,131 @@ button:hover {
   justify-content: center;
 }
 
+.auth-hero {
+  width: min(520px, 100%);
+  padding: 18px 18px 8px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(254, 218, 117, 0.28), transparent 46%),
+    radial-gradient(circle at 88% 14%, rgba(214, 41, 118, 0.24), transparent 46%),
+    radial-gradient(circle at 50% 90%, rgba(150, 47, 191, 0.22), transparent 52%),
+    color-mix(in oklab, var(--surface), transparent 18%);
+  border: 1px solid color-mix(in oklab, var(--border), transparent 30%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.auth-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.auth-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-logo-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand-b), var(--brand-c), var(--brand-d));
+}
+
+.auth-hero-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--border), transparent 35%);
+  background: color-mix(in oklab, var(--surface-soft), transparent 6%);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--border), transparent 35%);
+  background: color-mix(in oklab, var(--surface-soft), transparent 2%);
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-size: 13px;
+}
+
+.auth-hero-title {
+  margin: 18px 0 0;
+  font-size: 46px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.auth-hero-gradient {
+  display: block;
+  background: linear-gradient(135deg, var(--brand-b), var(--brand-c), var(--brand-d));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.auth-hero-copy {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.auth-feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.auth-feature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in oklab, var(--border), transparent 35%);
+  background: color-mix(in oklab, var(--surface-soft), transparent 8%);
+}
+
+.auth-feature-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgba(79, 91, 213, 0.28), rgba(214, 41, 118, 0.22));
+}
+
+.auth-feature strong {
+  display: block;
+  font-size: 13px;
+}
+
+.auth-feature .muted {
+  font-size: 12px;
+}
+
 .phone-frame {
   width: 300px;
   height: 570px;
@@ -483,8 +608,81 @@ button:hover {
   margin: 14px 0 24px;
 }
 
-.auth-card form button {
-  margin-top: 12px;
+.auth-head {
+  text-align: center;
+  margin: 6px 0 18px;
+}
+
+.auth-subtitle {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-card {
+  background: color-mix(in oklab, var(--surface), transparent 12%);
+  backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in oklab, var(--border), transparent 35%);
+}
+
+.field {
+  text-align: left;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.field input {
+  margin-top: 6px;
+}
+
+.input-with-btn {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.input-with-btn input {
+  flex: 1;
+  margin: 6px 0 0;
+}
+
+.icon-btn {
+  width: auto;
+  margin: 6px 0 0;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.icon-btn:hover {
+  opacity: 0.96;
+  transform: translateY(-1px);
+}
+
+.primary-btn {
+  margin-top: 14px;
+  border: 0;
+  background: linear-gradient(135deg, var(--brand-b), var(--brand-c), var(--brand-d));
+  box-shadow: 0 14px 30px rgba(214, 41, 118, 0.22);
+}
+
+#message {
+  min-height: 18px;
+  margin: 10px 2px 0;
+  font-size: 13px;
+}
+
+.auth-card form button.primary-btn {
+  margin-top: 14px;
 }
 
 .profile-hero h3 {
@@ -531,11 +729,12 @@ button:hover {
   .auth-layout {
     grid-template-columns: 1fr;
     gap: 20px;
+    align-items: start;
   }
 
-  .auth-visual {
-    display: none;
-  }
+  .auth-visual { justify-content: stretch; }
+  .auth-hero { width: 100%; }
+  .auth-hero-title { font-size: 38px; }
 
   .comment-form {
     flex-direction: column;

@@ -2,13 +2,32 @@ const API_BASE = "/api";
 
 const getToken = () => localStorage.getItem("token");
 const getMe = () => JSON.parse(localStorage.getItem("user") || "null");
+
+const getAvatarLetter = (user) => {
+  const raw = (user?.username || user?.email || "").trim();
+  return raw ? raw.charAt(0).toUpperCase() : "G";
+};
+
+const refreshHeaderAvatar = () => {
+  const letter = getAvatarLetter(getMe());
+  document.querySelectorAll(".header-avatar").forEach((node) => {
+    node.textContent = letter;
+  });
+};
+
+// Used by pages that update profile data in localStorage.
+window.refreshHeaderAvatar = refreshHeaderAvatar;
+document.addEventListener("DOMContentLoaded", refreshHeaderAvatar);
+
 const setAuth = (data) => {
   localStorage.setItem("token", data.token);
   localStorage.setItem("user", JSON.stringify(data.user));
+  refreshHeaderAvatar();
 };
 const clearAuth = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  refreshHeaderAvatar();
 };
 const requireAuth = () => {
   if (!getToken()) window.location.href = "/";

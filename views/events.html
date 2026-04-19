@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GMinsta Events Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/css/app-ui.css" />
+</head>
+<body>
+  <div class="app-panel">
+    <header class="shell-header">
+      <a href="/home" class="brand">GMinsta</a>
+      <div class="shell-header-actions">
+        <button id="themeBtn" class="header-chip" type="button">Theme</button>
+        <button id="logoutBtn" class="header-chip header-chip-danger" type="button">Logout</button>
+        <a href="/profile" class="header-icon" aria-label="Profile">
+          <span class="header-avatar">G</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="shell-body app-shell">
+      <aside class="shell-sidebar">
+        <nav class="shell-nav">
+          <a href="/home" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg></span>
+            <span>Home</span>
+          </a>
+          <a href="/reels" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg></span>
+            <span>Reels</span>
+          </a>
+          <a href="/discover" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg></span>
+            <span>Explore</span>
+          </a>
+          <a href="/events" class="nav-link active">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16"/></svg></span>
+            <span>Events</span>
+          </a>
+          <a href="/chat" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5c0 4.1-3.8 7.5-8.5 7.5-1.2 0-2.4-.2-3.4-.7L4 20l1.4-3.4C4.5 15.3 4 13.5 4 11.5 4 7.4 7.8 4 12.5 4S21 7.4 21 11.5z"/></svg></span>
+            <span>Chat</span>
+          </a>
+          <a href="/create" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg></span>
+            <span>Create</span>
+          </a>
+          <a href="/profile" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-3.3 4-5 7-5s5.5 1.7 7 5"/></svg></span>
+            <span>Profile</span>
+          </a>
+        </nav>
+      </aside>
+
+      <section class="feed-column">
+        <div class="card composer composer-inline events-hero">
+          <div class="composer-copy">
+            <h3>Events Hub</h3>
+            <p>Discover and register for campus events.</p>
+          </div>
+          <button id="openCreateEvent" type="button" class="header-chip">+ Upload Event</button>
+        </div>
+
+        <div id="createEventCard" class="card" style="display:none;">
+          <div class="section-head">
+            <h3>Upload Event</h3>
+            <button id="closeCreateEvent" class="header-chip" type="button">Close</button>
+          </div>
+          <form id="createEventForm">
+            <input id="eventTitle" placeholder="Event title" required />
+            <textarea id="eventDescription" placeholder="Event description" required></textarea>
+            <div class="row" style="gap:10px; align-items:stretch;">
+              <select id="eventCategory" required style="flex:1; padding:12px; border-radius:18px; border:1px solid var(--border); background: var(--surface-soft); color: var(--text);">
+                <option value="competition">Competition</option>
+                <option value="cultural">Cultural</option>
+                <option value="hackathon">Hackathon</option>
+                <option value="workshop">Workshop</option>
+                <option value="sports">Sports</option>
+              </select>
+              <input id="eventTotalSpots" type="number" min="1" placeholder="Total spots" required style="flex:1;" />
+            </div>
+            <input id="eventPoster" type="file" accept="image/*" />
+            <div class="row" style="gap:10px; align-items:stretch;">
+              <input id="eventDateLabel" placeholder="Date (e.g. May 20)" required style="flex:1;" />
+              <input id="eventTimeLabel" placeholder="Time (e.g. 11:00 AM)" required style="flex:1;" />
+            </div>
+            <input id="eventLocation" placeholder="Location" required />
+            <button type="submit" class="btn-small" style="width:auto;">Publish Event</button>
+            <p id="eventMessage" class="muted" style="margin:8px 2px 0; min-height:18px;"></p>
+          </form>
+        </div>
+
+        <div class="events-tabs card">
+          <button class="events-tab active" type="button" data-category="all">All</button>
+          <button class="events-tab" type="button" data-category="hackathon">Hackathon</button>
+          <button class="events-tab" type="button" data-category="workshop">Workshop</button>
+          <button class="events-tab" type="button" data-category="competition">Competition</button>
+          <button class="events-tab" type="button" data-category="cultural">Cultural</button>
+          <button class="events-tab" type="button" data-category="sports">Sports</button>
+        </div>
+
+        <div id="eventsList"></div>
+      </section>
+
+      <aside class="right-rail">
+        <div class="card">
+          <div class="section-head">
+            <h3>Your Campus</h3>
+          </div>
+          <div class="muted" style="font-size:13px; line-height:1.6;">
+            Tip: Tap Register to reserve a spot. The registered count updates instantly.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/theme.js"></script>
+  <script src="/public/js/events.js"></script>
+</body>
+</html>

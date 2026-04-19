@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GMinsta Chat</title>
+  <title>GMinsta Reels</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
       </div>
     </header>
 
-    <div class="shell-body page-shell">
+    <div class="shell-body app-shell">
       <aside class="shell-sidebar">
         <nav class="shell-nav">
           <a href="/home" class="nav-link">
@@ -33,7 +33,7 @@
             <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/></svg></span>
             <span>Explore</span>
           </a>
-          <a href="/reels" class="nav-link">
+          <a href="/reels" class="nav-link active">
             <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M15 4v16M4 9h16M4 15h16"/></svg></span>
             <span>Reels</span>
           </a>
@@ -45,7 +45,7 @@
             <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/></svg></span>
             <span>Create</span>
           </a>
-          <a href="/chat" class="nav-link active">
+          <a href="/chat" class="nav-link">
             <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5c0 4.1-3.8 7.5-8.5 7.5-1.2 0-2.4-.2-3.4-.7L4 20l1.4-3.4C4.5 15.3 4 13.5 4 11.5 4 7.4 7.8 4 12.5 4S21 7.4 21 11.5z"/></svg></span>
             <span>Chat</span>
           </a>
@@ -56,47 +56,34 @@
         </nav>
       </aside>
 
-      <main class="chat-layout chat-layout-wide">
-        <section class="card chat-sidebar chat-sidebar-panel">
-          <div class="section-head">
-            <h2>Messages</h2>
+      <section class="feed-column">
+        <div class="card composer composer-inline">
+          <div class="composer-copy">
+            <h3>Reels</h3>
+            <p>Watch the latest videos shared by the community.</p>
           </div>
-          <div class="chat-search-shell">
-            <input class="chat-search-input" placeholder="Search users to chat..." />
-          </div>
-          <div class="chat-side-columns">
-            <div class="sidebar-section">
-              <h3>Conversations</h3>
-              <div id="conversationsList"></div>
-            </div>
-            <div class="sidebar-section">
-              <h3>Friends</h3>
-              <div id="friendsList"></div>
-            </div>
-          </div>
-        </section>
+          <a class="header-chip" href="/create" style="text-decoration:none;">+ Create Reel</a>
+        </div>
 
-        <section class="card chat-main">
-          <div class="chat-main-header">
-            <h3 id="chatTitle">Your Messages</h3>
-            <p id="chatSubtitle" class="muted">Select a conversation to start chatting</p>
+        <div id="reelsFeed"></div>
+      </section>
+
+      <aside class="right-rail">
+        <div class="card">
+          <div class="section-head">
+            <h3>Tips</h3>
           </div>
-          <div id="chatEmptyState" class="empty-state compact-empty">
-            <h3>Your Messages</h3>
-            <p>Select a conversation to start chatting</p>
+          <div class="muted" style="font-size:13px; line-height:1.6;">
+            Upload a video from the Create page. It will appear here as a reel.
           </div>
-          <div id="chatBox" class="chat-box"></div>
-          <form id="chatForm" class="chat-form">
-            <input id="messageText" placeholder="Type a message..." />
-            <button type="submit">Send</button>
-          </form>
-        </section>
-      </main>
+        </div>
+      </aside>
     </div>
   </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/public/js/api.js"></script>
   <script src="/public/js/theme.js"></script>
-  <script src="/public/js/chat.js"></script>
+  <script src="/public/js/reels.js"></script>
 </body>
 </html>

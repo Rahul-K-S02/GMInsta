@@ -4,7 +4,13 @@ const postSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     caption: { type: String, required: true, trim: true, maxlength: 300 },
-    image: { type: String, required: true },
+    // New unified media fields (image or video)
+    mediaType: { type: String, enum: ["image", "video"], default: "image" },
+    mediaUrl: { type: String },
+    mediaPublicId: { type: String, unique: true, sparse: true },
+
+    // Backwards-compatible image fields (older docs / older client code)
+    image: { type: String },
     imagePublicId: { type: String, unique: true, sparse: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
@@ -15,5 +21,6 @@ const postSchema = new mongoose.Schema(
 );
 
 postSchema.index({ userId: 1, createdAt: -1 });
+postSchema.index({ mediaType: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Post", postSchema);

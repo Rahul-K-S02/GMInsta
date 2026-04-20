@@ -1,6 +1,12 @@
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 const messageBox = document.getElementById("message");
+const googleButton = document.getElementById("googleAuthButton");
+const googleReauthHint = document.getElementById("googleReauthHint");
+const authUrlParams = new URLSearchParams(window.location.search);
+
+const sanitizeReturnTo = (value) => (typeof value === "string" && value.startsWith("/") ? value : "/home");
+const returnTo = sanitizeReturnTo(authUrlParams.get("returnTo"));
 
 const showMessage = (msg, isError = false) => {
   if (!messageBox) return;
@@ -22,6 +28,49 @@ const setFormLoading = (form, loading, label) => {
   }
 };
 
+const clearGoogleReauthPrompt = () => {
+  if (googleReauthHint) {
+    googleReauthHint.hidden = true;
+    googleReauthHint.textContent = "Use Google to sign in to this account.";
+  }
+  googleButton?.classList.remove("reauth-highlight");
+};
+
+const showGoogleReauthPrompt = (message) => {
+  if (googleReauthHint) {
+    googleReauthHint.textContent = message || "Use Google to sign in to this account.";
+    googleReauthHint.hidden = false;
+  }
+  googleButton?.classList.add("reauth-highlight");
+  googleButton?.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+const buildGoogleStartUrl = () => {
+  const params = new URLSearchParams();
+  params.set("mode", registerForm ? "register" : "login");
+  params.set("returnTo", returnTo);
+
+  if (registerForm) {
+    const usernameInput = document.getElementById("username");
+    const preferredUsername = usernameInput?.value.trim();
+    if (preferredUsername) params.set("preferredUsername", preferredUsername);
+  }
+
+  return `/api/auth/google/start?${params.toString()}`;
+};
+
+const updateGoogleButton = () => {
+  if (!googleButton) return;
+  googleButton.textContent = registerForm ? "Continue with Google" : "Sign in with Google";
+};
+
+if (googleButton) {
+  googleButton.addEventListener("click", () => {
+    clearGoogleReauthPrompt();
+    window.location.href = buildGoogleStartUrl();
+  });
+}
+
 document.querySelectorAll(".pw-toggle[data-target]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const id = toggle.getAttribute("data-target");
@@ -37,6 +86,7 @@ if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
+      clearGoogleReauthPrompt();
       setFormLoading(loginForm, true, "Logging in...");
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
@@ -46,9 +96,12 @@ if (loginForm) {
         body: JSON.stringify({ email, password })
       });
       setAuth(data);
-      window.location.href = "/home";
+      window.location.href = returnTo;
     } catch (error) {
       showMessage(error.message, true);
+      if (error.message.includes("Google sign-in")) {
+        showGoogleReauthPrompt(error.message);
+      }
     } finally {
       setFormLoading(loginForm, false);
     }
@@ -56,6 +109,9 @@ if (loginForm) {
 }
 
 if (registerForm) {
+  const usernameInput = document.getElementById("username");
+  usernameInput?.addEventListener("input", updateGoogleButton);
+
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
@@ -69,7 +125,7 @@ if (registerForm) {
         body: JSON.stringify({ username, email, password })
       });
       setAuth(data);
-      window.location.href = "/home";
+      window.location.href = returnTo;
     } catch (error) {
       showMessage(error.message, true);
     } finally {
@@ -77,3 +133,5 @@ if (registerForm) {
     }
   });
 }
+
+updateGoogleButton();

@@ -83,6 +83,12 @@
           </div>
           <button class="primary-btn" type="submit">Log in</button>
         </form>
+        <div class="auth-divider"><span>or</span></div>
+        <div class="social-auth">
+          <button id="googleAuthButton" class="google-auth-button" type="button">Sign in with Google</button>
+          <p id="googleReauthHint" class="muted auth-note auth-reauth-hint" hidden>Use Google to sign in to this account.</p>
+          <p class="muted auth-note">Google sign-in keeps the same JWT session flow as email login.</p>
+        </div>
         <p id="message"></p>
       </div>
       <div class="card auth-switch">

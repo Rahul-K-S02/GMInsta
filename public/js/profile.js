@@ -98,6 +98,8 @@ async function loadProfile() {
     const followersCount = Array.isArray(user.followers) ? user.followers.length : 0;
     const followingCount = Array.isArray(user.following) ? user.following.length : 0;
     const postsState = document.getElementById("profilePostsState");
+    const authProvider = (user.authProvider || me.authProvider || "local").toLowerCase();
+    const authLabel = authProvider === "google" ? "Google connected" : "Email/password account";
 
     profileCard.innerHTML = `
       <div class="profile-header">
@@ -113,6 +115,7 @@ async function loadProfile() {
             <span class="profile-stat"><strong>${followingCount}</strong>following</span>
           </div>
           <p class="profile-bio"><strong>${user.username}</strong><br />${user.bio || "No bio yet"}</p>
+          <div class="profile-auth-line muted">${escapeHtml(authLabel)}</div>
           ${!isMe ? `
             <div class="user-actions">
               <button class="btn-small" onclick="toggleFollowProfile('${user._id}')">${isFollowing ? "Unfollow" : "Follow"}</button>
@@ -143,9 +146,14 @@ async function loadProfile() {
       profilePosts.innerHTML = postsCount
         ? posts
             .map(
-              (post) => `
+              (post) => {
+                const mediaType = post.mediaType || (String(post.mediaUrl || post.image || "").match(/\.(mp4|webm|ogg)(\?|$)/i) ? "video" : "image");
+                const mediaMarkup = mediaType === "video"
+                  ? `<video class="profile-post-media" src="${post.mediaUrl || post.image || ""}" controls playsinline preload="metadata"></video>`
+                  : `<img class="profile-post-media" src="${post.mediaUrl || post.image || ""}" alt="Post image" />`;
+                return `
                 <div class="profile-post-card">
-                  <img src="${post.mediaUrl || post.image || ""}" alt="Post image" />
+                  ${mediaMarkup}
                   <div class="post-meta">
                     <p>${escapeHtml(post.caption || "")}</p>
                     <span class="muted">${new Date(post.createdAt).toLocaleDateString()}</span>
@@ -165,7 +173,8 @@ async function loadProfile() {
                     </button>
                     <div id="profile-comments-${post._id}" class="profile-comment-list" style="display:none;" data-open="false"></div>
                   </div>
-                </div>`
+                </div>`;
+              }
             )
             .join("")
         : "";
@@ -193,9 +202,10 @@ profileForm?.addEventListener("submit", async (e) => {
       username: response.user.username,
       email: response.user.email,
       bio: response.user.bio,
-      profilePic: response.user.profilePic
+      profilePic: response.user.profilePic,
+      authProvider: response.user.authProvider || (getMe() || {}).authProvider,
+      emailVerified: typeof response.user.emailVerified === "boolean" ? response.user.emailVerified : (getMe() || {}).emailVerified
     }));
-    if (typeof window.refreshHeaderAvatar === "function") window.refreshHeaderAvatar();
   }
   await loadProfile();
   alert("Profile updated");

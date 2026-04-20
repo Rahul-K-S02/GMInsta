@@ -685,6 +685,61 @@ button:hover {
   margin-top: 14px;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.social-auth {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.google-auth-button {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--border), transparent 25%);
+  background: color-mix(in oklab, var(--surface-soft), transparent 8%);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-note {
+  margin: 0;
+  text-align: center;
+}
+
+.auth-reauth-hint {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.google-auth-button.reauth-highlight {
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary), transparent 20%), 0 14px 32px rgba(77, 181, 255, 0.16);
+}
+
 .profile-hero h3 {
   margin: 0 0 4px;
 }

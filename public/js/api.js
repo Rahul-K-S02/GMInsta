@@ -30,7 +30,10 @@ const clearAuth = () => {
   refreshHeaderAvatar();
 };
 const requireAuth = () => {
-  if (!getToken()) window.location.href = "/";
+  if (!getToken()) {
+    const returnTo = `${window.location.pathname}${window.location.search}` || "/home";
+    window.location.href = `/?returnTo=${encodeURIComponent(returnTo)}`;
+  }
 };
 
 async function apiFetch(url, options = {}) {

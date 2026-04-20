@@ -4,7 +4,10 @@ const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, trim: true, minlength: 3 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true },
+    password: { type: String, default: null, select: false },
+    authProvider: { type: String, enum: ["local", "google"], default: "local" },
+    googleId: { type: String, unique: true, sparse: true, trim: true },
+    emailVerified: { type: Boolean, default: false },
     bio: { type: String, default: "" },
     profilePic: { type: String, default: "/public/images/default-avatar.svg" },
     profilePicPublicId: { type: String, unique: true, sparse: true },

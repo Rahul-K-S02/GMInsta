@@ -11,6 +11,7 @@ const connectDB = require("./config/db");
 const { apiLimiter, authLimiter } = require("./middleware/rateLimiter");
 const errorHandler = require("./middleware/errorHandler");
 const setupSocket = require("./config/socket");
+const { completeGoogleAuth, getGoogleCallbackRoutePath } = require("./controllers/authController");
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -22,6 +23,7 @@ const eventRoutes = require("./routes/eventRoutes");
 const viewRoutes = require("./routes/viewRoutes");
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -33,6 +35,18 @@ const io = new Server(server, {
 connectDB();
 setupSocket(io);
 app.set("io", io);
+
+const DEFAULT_PORT = parseInt(process.env.PORT || "5000", 10);
+const CANONICAL_HOST = process.env.CANONICAL_HOST || "localhost";
+
+app.use((req, res, next) => {
+  const hostname = req.hostname;
+  const isLoopbackHost = hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+  if (isLoopbackHost && hostname !== CANONICAL_HOST) {
+    return res.redirect(302, `${req.protocol}://${CANONICAL_HOST}:${DEFAULT_PORT}${req.originalUrl}`);
+  }
+  return next();
+});
 
 // Helmet's default CSP is strict and blocks `blob:` (local previews) and external image hosts
 // like Cloudinary. Configure CSP explicitly so image previews and uploaded post images render.
@@ -52,10 +66,11 @@ app.use(
         // Socket.io and API calls; allow ws/wss for local sockets.
         connectSrc: ["'self'", "ws:", "wss:", "https:"],
         // App ships scripts from self; allow inline handlers used in a few templates.
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://accounts.google.com"],
         scriptSrcAttr: ["'unsafe-inline'"],
         // Allow inline styles used across templates.
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
         fontSrc: ["'self'", "data:", "https:"],
         upgradeInsecureRequests: null
       }
@@ -78,6 +93,8 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/events", eventRoutes);
 
+app.get(getGoogleCallbackRoutePath(), completeGoogleAuth);
+
 app.use("/", viewRoutes);
 
 app.use((req, res) => {
@@ -85,7 +102,6 @@ app.use((req, res) => {
 });
 app.use(errorHandler);
 
-const DEFAULT_PORT = parseInt(process.env.PORT || "5000", 10);
 let currentPort = DEFAULT_PORT;
 
 const startServer = (port) => {
@@ -97,14 +113,7 @@ const startServer = (port) => {
 server.on("error", (error) => {
   if (error.syscall !== "listen") throw error;
   if (error.code === "EADDRINUSE") {
-    if (currentPort === DEFAULT_PORT) {
-      const fallbackPort = 5001;
-      console.warn(`Port ${currentPort} is already in use; trying fallback port ${fallbackPort}...`);
-      currentPort = fallbackPort;
-      startServer(currentPort);
-      return;
-    }
-    console.error(`Port ${currentPort} is already in use. Please stop the process using it or set a different PORT.`);
+    console.error(`Port ${currentPort} is already in use. Stop the process using it or change PORT and update the Google authorized origin to match.`);
     process.exit(1);
   }
   throw error;

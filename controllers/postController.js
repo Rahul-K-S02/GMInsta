@@ -16,11 +16,13 @@ const normalizePostMedia = (post) => {
   const mediaPublicId = post.mediaPublicId || post.imagePublicId || null;
   const mediaFallback = post.mediaUrl || post.image || null;
   const mediaUrl =
-    buildOptimizedAssetUrl({
-      publicId: mediaPublicId,
-      fallbackUrl: mediaFallback,
-      resourceType: mediaType === "video" ? "video" : "image"
-    }) || "/public/images/default-avatar.svg";
+    mediaType === "video"
+      ? mediaFallback || "/public/images/default-avatar.svg"
+      : buildOptimizedAssetUrl({
+          publicId: mediaPublicId,
+          fallbackUrl: mediaFallback,
+          resourceType: "image"
+        }) || "/public/images/default-avatar.svg";
 
   return {
     ...post,

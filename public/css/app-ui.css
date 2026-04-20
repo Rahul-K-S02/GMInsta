@@ -446,6 +446,45 @@ button:hover {
   background: #000;
 }
 
+.reels-page .feed-column {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.reels-page #reelsFeed {
+  display: grid;
+  gap: 24px;
+}
+
+.reels-page .post-card {
+  padding: 20px;
+  overflow: hidden;
+}
+
+.reels-page .post-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  height: min(76vh, 860px);
+  max-height: none;
+  object-fit: cover;
+  border-radius: 22px;
+  margin: 10px 0 16px;
+  background: #000;
+}
+
+.reels-page .post-head {
+  margin-bottom: 12px;
+}
+
+.reels-page .post-card p {
+  margin-bottom: 12px;
+}
+
+.reels-page .post-actions {
+  flex-wrap: wrap;
+}
+
 .events-tabs {
   display: flex;
   gap: 10px;
@@ -801,7 +840,8 @@ button:hover {
   background: var(--surface-soft);
 }
 
-.profile-post-card img {
+.profile-post-card img,
+.profile-post-card video {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;

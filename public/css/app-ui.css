@@ -246,10 +246,258 @@ textarea {
 
 .feed-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   padding: 10px;
   margin-bottom: 20px;
+}
+
+.stories-card {
+  padding: 14px 14px 12px;
+  margin-bottom: 16px;
+}
+
+.stories-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stories-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.stories-watch-all {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  padding: 0;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.stories-rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 6px 2px 8px;
+}
+
+.stories-rail::-webkit-scrollbar {
+  height: 8px;
+}
+
+.story-item {
+  border: 0;
+  background: transparent;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0;
+  min-width: 72px;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.story-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 72px;
+}
+
+.story-self-open {
+  border: 0;
+  background: transparent;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.story-self-add {
+  min-width: 72px;
+}
+
+.story-item:hover {
+  transform: none;
+  opacity: 1;
+}
+
+.story-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b), var(--brand-c));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.story-item.seen .story-ring {
+  background: color-mix(in srgb, var(--muted) 60%, var(--border));
+}
+
+.story-ring-add {
+  box-shadow: none;
+}
+
+.story-plus-badge {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: auto;
+  height: auto;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.story-add-badge {
+  border: 0;
+  box-shadow: none;
+}
+
+.story-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--surface);
+  background: var(--surface-soft);
+}
+
+.story-label {
+  font-size: 11px;
+  max-width: 72px;
+  text-align: center;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.story-empty {
+  color: var(--muted);
+  padding: 8px 4px;
+  font-size: 13px;
+}
+
+.story-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(4, 8, 14, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.story-viewer.open {
+  display: flex;
+}
+
+.story-viewer-shell {
+  width: min(430px, calc(100vw - 22px));
+  max-height: calc(100vh - 22px);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: #0d111a;
+  color: #fff;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.story-progress {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.story-progress-segment {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.story-progress-segment.done,
+.story-progress-segment.active {
+  background: #fff;
+}
+
+.story-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.story-media-wrap {
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+}
+
+.story-media {
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  display: block;
+}
+
+.story-viewer-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.story-heart-btn {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: none;
+}
+
+.story-heart-btn.liked {
+  background: rgba(255, 77, 177, 0.2);
+  border-color: rgba(255, 77, 177, 0.35);
+}
+
+.story-heart-icon {
+  color: #ff6b9d;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.story-heart-count {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .feed-switch-btn {
@@ -430,20 +678,49 @@ button:hover {
 
 .post-img {
   width: 100%;
-  max-height: 540px;
-  object-fit: cover;
+  max-height: 72vh;
+  object-fit: contain;
   border-radius: 20px;
   border: 1px solid var(--border);
   margin-bottom: 14px;
+  background: var(--surface-soft);
 }
 
 .post-video {
   width: 100%;
-  max-height: 540px;
+  max-height: 72vh;
   border-radius: 20px;
   border: 1px solid var(--border);
   margin-bottom: 14px;
   background: #000;
+  object-fit: contain;
+}
+
+.profile-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-link:hover {
+  text-decoration: underline;
+}
+
+.reaction-btn {
+  min-width: 74px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.reaction-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.reaction-count {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .reels-page .feed-column {
@@ -467,7 +744,7 @@ button:hover {
   aspect-ratio: 9 / 16;
   height: min(76vh, 860px);
   max-height: none;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 22px;
   margin: 10px 0 16px;
   background: #000;
@@ -637,7 +914,7 @@ button:hover {
 .event-poster {
   width: 100%;
   aspect-ratio: 16 / 9;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 20px;
   border: 1px solid var(--border);
   margin-bottom: 14px;
@@ -834,18 +1111,40 @@ button:hover {
 }
 
 .profile-post-card {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   background: var(--surface-soft);
 }
 
+.profile-post-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(17, 24, 39, 0.78);
+  color: #fff;
+  cursor: pointer;
+}
+
+.profile-post-delete:hover {
+  background: #b42318;
+}
+
 .profile-post-card img,
 .profile-post-card video {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  max-height: 420px;
+  object-fit: contain;
   display: block;
+  background: var(--surface-soft);
 }
 
 .profile-post-card .post-meta {

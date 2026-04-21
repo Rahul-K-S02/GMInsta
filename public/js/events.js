@@ -51,7 +51,11 @@ const renderEvent = (event) => {
   const btnLabel = event.isRegistered ? "Registered" : "Register";
   const disabled = event.isRegistered || (event.spotsLeft ?? 0) <= 0;
 
-  const poster = event.posterUrl ? `<img class="event-poster" src="${event.posterUrl}" alt="poster" />` : "";
+  const poster = event.posterUrl
+    ? `<a href="${event.posterUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open event poster">
+        <img class="event-poster" src="${event.posterUrl}" alt="poster" loading="lazy" onerror="this.style.display='none'" />
+      </a>`
+    : "";
 
   return `
     <article class="card event-card" data-event-id="${event._id}">

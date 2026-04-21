@@ -72,6 +72,21 @@ async function toggleProfileComments(postId) {
 }
 window.toggleProfileComments = toggleProfileComments;
 
+async function deletePostFromProfile(postId) {
+  if (!postId) return;
+  const confirmed = window.confirm("Delete this post?");
+  if (!confirmed) return;
+
+  try {
+    await apiFetch(`/posts/${postId}`, { method: "DELETE" });
+    await loadProfile();
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    alert(error.message || "Unable to delete post.");
+  }
+}
+window.deletePostFromProfile = deletePostFromProfile;
+
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
   clearAuth();
   window.location.href = "/";
@@ -151,8 +166,11 @@ async function loadProfile() {
                 const mediaMarkup = mediaType === "video"
                   ? `<video class="profile-post-media" src="${post.mediaUrl || post.image || ""}" controls playsinline preload="metadata"></video>`
                   : `<img class="profile-post-media" src="${post.mediaUrl || post.image || ""}" alt="Post image" />`;
+                const postOwnerId = String(post.userId?._id || post.userId || "");
+                const canDelete = isMe && postOwnerId && postOwnerId === String(me.id || user._id);
                 return `
                 <div class="profile-post-card">
+                  ${canDelete ? `<button type="button" class="profile-post-delete" data-post-id="${post._id}" onclick="deletePostFromProfile('${post._id}')" aria-label="Delete post" title="Delete post">&#128465;</button>` : ""}
                   ${mediaMarkup}
                   <div class="post-meta">
                     <p>${escapeHtml(post.caption || "")}</p>

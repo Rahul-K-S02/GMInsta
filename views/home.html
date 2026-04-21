@@ -57,9 +57,16 @@
       </aside>
 
       <section class="feed-column">
+        <div class="card stories-card">
+          <div class="stories-head">
+            <h3>Stories</h3>
+            <input id="storyInput" type="file" accept="image/*,video/*" multiple hidden />
+          </div>
+          <div id="storiesRail" class="stories-rail"></div>
+        </div>
+
         <div class="feed-switch card">
           <button class="feed-switch-btn active" type="button">For You</button>
-          <button class="feed-switch-btn" type="button">Following</button>
         </div>
 
         <div id="feed"></div>
@@ -99,9 +106,37 @@
       </aside>
     </div>
   </div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/public/js/api.js"></script>
-  <script src="/public/js/theme.js"></script>
-  <script src="/public/js/home.js"></script>
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="/public/js/api.js"></script>
+  <script defer src="/public/js/theme.js"></script>
+  <script defer src="/public/js/home.js"></script>
+
+  <div id="storyViewer" class="story-viewer" aria-hidden="true">
+    <div class="story-viewer-shell">
+      <div class="story-progress" id="storyProgress"></div>
+      <div class="story-viewer-head">
+        <div class="row">
+          <img id="storyViewerAvatar" class="avatar" src="/public/images/default-avatar.svg" alt="avatar" />
+          <div>
+            <strong id="storyViewerName">Story</strong>
+            <div id="storyViewerTime" class="muted"></div>
+          </div>
+        </div>
+        <button id="closeStoryViewer" type="button" class="header-chip">Close</button>
+      </div>
+      <div class="story-media-wrap">
+        <img id="storyViewerImage" class="story-media" alt="story" style="display:none;" />
+        <video id="storyViewerVideo" class="story-media" controls playsinline style="display:none;"></video>
+      </div>
+      <div class="story-viewer-actions">
+        <button id="storyPrev" type="button" class="header-chip">Prev</button>
+        <button id="storyHeartBtn" type="button" class="story-heart-btn" aria-label="Like story" title="Like story">
+          <span class="story-heart-icon" aria-hidden="true">&#10084;</span>
+          <span id="storyHeartCount" class="story-heart-count">0</span>
+        </button>
+        <button id="storyNext" type="button" class="header-chip">Next</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

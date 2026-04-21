@@ -6,6 +6,20 @@ const feed = document.getElementById("feed");
 const notificationsList = document.getElementById("notifications");
 const friendsList = document.getElementById("friendsList");
 const exploreUsers = document.getElementById("exploreUsers");
+const storiesRail = document.getElementById("storiesRail");
+const addStoryBtn = document.getElementById("addStoryBtn");
+const watchAllStoriesBtn = document.getElementById("watchAllStoriesBtn");
+const storyInput = document.getElementById("storyInput");
+const storyViewer = document.getElementById("storyViewer");
+const storyProgress = document.getElementById("storyProgress");
+const storyViewerAvatar = document.getElementById("storyViewerAvatar");
+const storyViewerName = document.getElementById("storyViewerName");
+const storyViewerTime = document.getElementById("storyViewerTime");
+const storyViewerImage = document.getElementById("storyViewerImage");
+const storyViewerVideo = document.getElementById("storyViewerVideo");
+const closeStoryViewerBtn = document.getElementById("closeStoryViewer");
+const storyPrevBtn = document.getElementById("storyPrev");
+const storyNextBtn = document.getElementById("storyNext");
 const me = getMe() || {};
 const socket = io("/", { auth: { token: getToken() } });
 
@@ -13,6 +27,10 @@ let page = 1;
 let hasMore = true;
 let isLoading = false;
 const expandedComments = new Set();
+let storiesCache = [];
+let activeStoryUserId = null;
+let activeStoryIndex = 0;
+let storyImageTimer = null;
 
 function renderHomeProfileCard() {
   const name = document.getElementById("homeProfileName");
@@ -42,6 +60,17 @@ function escapeHtml(value) {
   });
 }
 
+function timeAgo(value) {
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.max(1, Math.floor(diffMs / 60000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 // Helper functions
 function messageFriend(userId, username) {
   window.location.href = `/chat?user=${userId}`;
@@ -52,6 +81,32 @@ function viewUserProfile(userId) {
   window.location.href = `/profile?userId=${userId}`;
 }
 window.viewUserProfile = viewUserProfile;
+
+function getProfileHref(user) {
+  const userId = user?._id || user?.id;
+  return userId ? `/profile?userId=${userId}` : "/profile";
+}
+
+function reactionButtonMarkup({ type, active, count }) {
+  const isLike = type === "like";
+  const icon = isLike ? "&#128077;" : "&#128078;";
+  const actionLabel = isLike ? "like" : "dislike";
+  const activeClass = active ? (isLike ? "liked" : "disliked") : "";
+  return `
+    <button
+      type="button"
+      class="btn-small reaction-btn ${activeClass}"
+      data-action="post-react"
+      data-post-id="${count.postId}"
+      data-react="${type}"
+      aria-label="${active ? "Undo" : "Add"} ${actionLabel}"
+      title="${active ? "Undo" : "Add"} ${actionLabel}"
+    >
+      <span class="reaction-icon" aria-hidden="true">${icon}</span>
+      <span class="reaction-count">${count.value}</span>
+    </button>
+  `;
+}
 
 socket.on("connect", () => {
   console.log("Home socket connected");
@@ -64,6 +119,10 @@ socket.on("disconnect", () => {
 socket.on("follow_update", async () => {
   await loadFriends();
   await loadExploreUsers();
+});
+
+socket.on("story_created", async () => {
+  await loadStories();
 });
 
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
@@ -97,6 +156,19 @@ postForm?.addEventListener("submit", async (e) => {
 const renderPost = (post) => {
   const mediaType = post.mediaType || "image";
   const mediaUrl = post.mediaUrl || post.image || "/public/images/default-avatar.svg";
+  const likeCount = post.likesCount ?? post.likes?.length ?? 0;
+  const dislikeCount = post.dislikesCount ?? post.dislikes?.length ?? 0;
+  const profileHref = getProfileHref(post.userId);
+  const likeButton = reactionButtonMarkup({
+    type: "like",
+    active: !!post.isLiked,
+    count: { postId: post._id, value: likeCount }
+  });
+  const dislikeButton = reactionButtonMarkup({
+    type: "dislike",
+    active: !!post.isDisliked,
+    count: { postId: post._id, value: dislikeCount }
+  });
   console.log("Rendering post media:", post._id, mediaType, mediaUrl);
   const mediaMarkup =
     mediaType === "video"
@@ -105,21 +177,19 @@ const renderPost = (post) => {
   return `
   <article class="card post-card">
     <div class="row post-head">
-      <img class="avatar" src="${post.userId?.profilePic || '/public/images/default-avatar.svg'}" alt="avatar" onerror="console.error('Avatar load failed:', this.src); this.src='/public/images/default-avatar.svg'" />
+      <a href="${profileHref}" class="profile-link" aria-label="Open ${escapeHtml(post.userId?.username || "user")} profile">
+        <img class="avatar" src="${post.userId?.profilePic || '/public/images/default-avatar.svg'}" alt="avatar" onerror="console.error('Avatar load failed:', this.src); this.src='/public/images/default-avatar.svg'" />
+      </a>
       <div>
-        <strong>${escapeHtml(post.userId?.username || 'Unknown')}</strong>
+        <strong><a href="${profileHref}" class="profile-link">${escapeHtml(post.userId?.username || 'Unknown')}</a></strong>
         <div class="muted">${new Date(post.createdAt).toLocaleString()}</div>
       </div>
     </div>
     <p>${escapeHtml(post.caption)}</p>
     ${mediaMarkup}
     <div class="row post-actions">
-      <button type="button" class="btn-small ${post.isLiked ? 'liked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="like">
-        ${post.isLiked ? 'Unlike' : 'Like'} (${post.likesCount ?? post.likes?.length ?? 0})
-      </button>
-      <button type="button" class="btn-small ${post.isDisliked ? 'disliked' : ''}" data-action="post-react" data-post-id="${post._id}" data-react="dislike">
-        ${post.isDisliked ? 'Undislike' : 'Dislike'} (${post.dislikesCount ?? post.dislikes?.length ?? 0})
-      </button>
+      ${likeButton}
+      ${dislikeButton}
       <button type="button" class="btn-small" data-action="open-comments" data-post-id="${post._id}">Comments</button>
     </div>
     <div class="comments-section">
@@ -177,11 +247,15 @@ function updatePostReactionButtons(postId, state) {
 
   if (likeBtn) {
     likeBtn.classList.toggle("liked", !!state.isLiked);
-    likeBtn.textContent = `${state.isLiked ? "Unlike" : "Like"} (${state.likesCount ?? 0})`;
+    likeBtn.innerHTML = `<span class="reaction-icon" aria-hidden="true">&#128077;</span><span class="reaction-count">${state.likesCount ?? 0}</span>`;
+    likeBtn.setAttribute("aria-label", `${state.isLiked ? "Undo" : "Add"} like`);
+    likeBtn.setAttribute("title", `${state.isLiked ? "Undo" : "Add"} like`);
   }
   if (dislikeBtn) {
     dislikeBtn.classList.toggle("disliked", !!state.isDisliked);
-    dislikeBtn.textContent = `${state.isDisliked ? "Undislike" : "Dislike"} (${state.dislikesCount ?? 0})`;
+    dislikeBtn.innerHTML = `<span class="reaction-icon" aria-hidden="true">&#128078;</span><span class="reaction-count">${state.dislikesCount ?? 0}</span>`;
+    dislikeBtn.setAttribute("aria-label", `${state.isDisliked ? "Undo" : "Add"} dislike`);
+    dislikeBtn.setAttribute("title", `${state.isDisliked ? "Undo" : "Add"} dislike`);
   }
 }
 
@@ -252,7 +326,7 @@ async function loadComments(postId) {
           ? comments
           .map(
             (c) => `<div class="comment-item">
-              <strong>${escapeHtml(c.userId?.username || "User")}</strong>
+              <strong><a class="profile-link" href="${getProfileHref(c.userId)}">${escapeHtml(c.userId?.username || "User")}</a></strong>
               <span>${escapeHtml(c.commentText)}</span>
             </div>`
           )
@@ -288,15 +362,275 @@ async function reactComment(commentId, action, postId) {
 }
 window.reactComment = reactComment;
 
+function clearStoryTimers() {
+  if (storyImageTimer) {
+    clearTimeout(storyImageTimer);
+    storyImageTimer = null;
+  }
+  if (storyViewerVideo) {
+    storyViewerVideo.onended = null;
+  }
+}
+
+function getActiveStoryGroup() {
+  return storiesCache.find((item) => String(item.userId) === String(activeStoryUserId));
+}
+
+function renderStoryProgress(group, currentIndex) {
+  if (!storyProgress) return;
+  const total = Array.isArray(group?.stories) ? group.stories.length : 0;
+  storyProgress.innerHTML = Array.from({ length: total }, (_, idx) => {
+    const cls = idx < currentIndex ? "done" : idx === currentIndex ? "active" : "";
+    return `<span class="story-progress-segment ${cls}"></span>`;
+  }).join("");
+}
+
+async function markViewed(storyId) {
+  try {
+    await apiFetch(`/posts/stories/${storyId}/view`, { method: "POST" });
+  } catch (error) {
+    console.error("Unable to mark story viewed:", error.message);
+  }
+}
+
+function closeStoryViewer() {
+  clearStoryTimers();
+  if (storyViewerVideo) {
+    storyViewerVideo.pause();
+    storyViewerVideo.removeAttribute("src");
+    storyViewerVideo.load();
+  }
+  if (storyViewer) {
+    storyViewer.classList.remove("open");
+    storyViewer.setAttribute("aria-hidden", "true");
+  }
+  activeStoryUserId = null;
+  activeStoryIndex = 0;
+}
+
+async function showStoryAt(index) {
+  const group = getActiveStoryGroup();
+  if (!group || !Array.isArray(group.stories) || !group.stories.length) {
+    closeStoryViewer();
+    return;
+  }
+
+  if (index < 0) index = 0;
+  if (index >= group.stories.length) {
+    closeStoryViewer();
+    await loadStories();
+    return;
+  }
+
+  activeStoryIndex = index;
+  const story = group.stories[activeStoryIndex];
+  clearStoryTimers();
+  renderStoryProgress(group, activeStoryIndex);
+
+  if (storyViewerAvatar) storyViewerAvatar.src = group.profilePic || "/public/images/default-avatar.svg";
+  if (storyViewerName) storyViewerName.textContent = group.username || "Story";
+  if (storyViewerTime) storyViewerTime.textContent = timeAgo(story.createdAt);
+
+  if (story.mediaType === "video") {
+    if (storyViewerImage) storyViewerImage.style.display = "none";
+    if (storyViewerVideo) {
+      storyViewerVideo.style.display = "block";
+      storyViewerVideo.src = story.mediaUrl;
+      storyViewerVideo.currentTime = 0;
+      storyViewerVideo.play().catch(() => {});
+      storyViewerVideo.onended = () => {
+        showStoryAt(activeStoryIndex + 1);
+      };
+    }
+  } else {
+    if (storyViewerVideo) {
+      storyViewerVideo.pause();
+      storyViewerVideo.removeAttribute("src");
+      storyViewerVideo.load();
+      storyViewerVideo.style.display = "none";
+    }
+    if (storyViewerImage) {
+      storyViewerImage.style.display = "block";
+      storyViewerImage.src = story.mediaUrl;
+    }
+    storyImageTimer = setTimeout(() => {
+      showStoryAt(activeStoryIndex + 1);
+    }, 5000);
+  }
+
+  if (!story.isViewed) {
+    await markViewed(story._id);
+    story.isViewed = true;
+  }
+
+  updateStoryHeartButton(story);
+}
+
+function updateStoryHeartButton(story) {
+  const heartBtn = document.getElementById("storyHeartBtn");
+  const heartCount = document.getElementById("storyHeartCount");
+  if (!heartBtn || !heartCount || !story) return;
+
+  heartBtn.classList.toggle("liked", !!story.isLiked);
+  heartBtn.setAttribute("aria-label", `${story.isLiked ? "Unlike" : "Like"} story`);
+  heartBtn.title = `${story.isLiked ? "Unlike" : "Like"} story`;
+  heartCount.textContent = String(story.likesCount ?? 0);
+}
+
+async function toggleStoryLike() {
+  const group = getActiveStoryGroup();
+  if (!group || !group.stories?.length) return;
+  const story = group.stories[activeStoryIndex];
+  if (!story?._id) return;
+
+  try {
+    const response = await apiFetch(`/posts/${story._id}/react`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "like" })
+    });
+
+    story.likesCount = response.likesCount ?? story.likesCount ?? 0;
+    story.isLiked = !!response.isLiked;
+    updateStoryHeartButton(story);
+  } catch (error) {
+    alert(error.message || "Unable to like story.");
+  }
+}
+
+async function openStoryViewer(userId) {
+  try {
+    const stories = await apiFetch(`/posts/stories/${userId}`);
+    if (!Array.isArray(stories) || !stories.length) return;
+
+    const base = storiesCache.find((item) => String(item.userId) === String(userId));
+    const group = {
+      userId,
+      username: base?.username || stories[0]?.userId?.username || "Story",
+      profilePic: base?.profilePic || stories[0]?.userId?.profilePic || "/public/images/default-avatar.svg",
+      stories
+    };
+
+    storiesCache = storiesCache.filter((item) => String(item.userId) !== String(userId));
+    storiesCache.unshift(group);
+
+    activeStoryUserId = userId;
+    activeStoryIndex = 0;
+    if (storyViewer) {
+      storyViewer.classList.add("open");
+      storyViewer.setAttribute("aria-hidden", "false");
+    }
+    await showStoryAt(0);
+  } catch (error) {
+    console.error("Unable to open story viewer:", error);
+  }
+}
+
+function renderStoriesRail(items) {
+  if (!storiesRail) return;
+  const selfStory = items.find((item) => String(item.userId) === String(me.id));
+  const normalizedItems = items.filter((item) => String(item.userId) !== String(me.id));
+  const selfProfile = {
+    userId: me.id,
+    username: me.username || "You",
+    profilePic: me.profilePic || "/public/images/default-avatar.svg"
+  };
+
+  const renderSelfTile = () => {
+    if (selfStory) {
+      return `
+        <div class="story-tile story-self-tile">
+          <button type="button" class="story-item story-self-open" data-action="open-story" data-user-id="${selfProfile.userId}">
+            <span class="story-ring story-ring-own ${selfStory.hasUnseen ? "" : "seen"}">
+              <img class="story-avatar" src="${selfProfile.profilePic}" alt="${escapeHtml(selfProfile.username)}" />
+              <span class="story-plus-badge story-add-badge" data-action="add-story" role="button" tabindex="0" aria-label="Add another story" title="Add another story">+</span>
+            </span>
+            <span class="story-label">${escapeHtml(selfProfile.username)}</span>
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <button type="button" class="story-item story-add story-self-add" data-action="add-story">
+        <span class="story-ring story-ring-add">
+          <img class="story-avatar" src="${selfProfile.profilePic}" alt="${escapeHtml(selfProfile.username)}" />
+          <span class="story-plus-badge" aria-hidden="true">+</span>
+        </span>
+        <span class="story-label">${escapeHtml(selfProfile.username)}</span>
+      </button>
+    `;
+  };
+
+  const tiles = [renderSelfTile(), ...normalizedItems.map((item) => {
+    const seenClass = item.hasUnseen ? "" : "seen";
+    return `
+      <button type="button" class="story-item ${seenClass}" data-action="open-story" data-user-id="${item.userId}">
+        <span class="story-ring">
+          <img class="story-avatar" src="${item.profilePic || "/public/images/default-avatar.svg"}" alt="${escapeHtml(item.username)}" />
+        </span>
+        <span class="story-label">${escapeHtml(item.username || "User")}</span>
+      </button>
+    `;
+  })];
+
+  storiesRail.innerHTML = tiles.length ? tiles.join("") : '<div class="story-empty">No stories yet. Tap your photo to add one.</div>';
+}
+
+async function loadStories() {
+  try {
+    const usersWithStories = await apiFetch("/posts/stories");
+    storiesCache = Array.isArray(usersWithStories)
+      ? usersWithStories.map((entry) => ({ ...entry, stories: [] }))
+      : [];
+    renderStoriesRail(storiesCache);
+  } catch (error) {
+    console.error("Error loading stories:", error);
+    if (storiesRail) storiesRail.innerHTML = '<div class="story-empty">Unable to load stories.</div>';
+  }
+}
+
+async function watchAllStories() {
+  const nextStory = storiesCache.find((item) => String(item.userId) !== String(me.id) && Array.isArray(item.stories) && item.stories.length);
+  if (!nextStory) return;
+  await openStoryViewer(nextStory.userId);
+}
+
+async function uploadStory(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append("image", file);
+  fd.append("caption", "Story");
+  try {
+    await apiFetch("/posts/stories", { method: "POST", body: fd });
+    await loadStories();
+  } catch (error) {
+    alert(error.message || "Unable to upload story.");
+  }
+}
+
+async function uploadMultipleStories(fileList) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (!files.length) return;
+
+  for (const file of files) {
+    // Upload each selected file as its own story so the strip can show multiple entries.
+    await uploadStory(file);
+  }
+  await loadStories();
+}
+
 async function loadFriends() {
   try {
     const user = await apiFetch("/users/me");
     if (user.following && user.following.length > 0) {
       friendsList.innerHTML = user.following.map(f => `
         <div class="friend-item">
-          <img class="avatar" src="${f.profilePic}" alt="${f.username}" />
+          <a href="/profile?userId=${f._id}" class="profile-link" aria-label="Open ${escapeHtml(f.username)} profile">
+            <img class="avatar" src="${f.profilePic}" alt="${f.username}" />
+          </a>
           <div class="friend-info">
-            <strong onclick="viewUserProfile('${f._id}')" style="cursor:pointer;">${f.username}</strong>
+            <strong><a class="profile-link" href="/profile?userId=${f._id}">${escapeHtml(f.username)}</a></strong>
             <div class="muted">Friend</div>
             <a class="btn-small msg-btn" href="/chat?user=${f._id}">Message</a>
           </div>
@@ -358,10 +692,12 @@ async function loadExploreUsers() {
 
         return `
           <div class="user-item" id="user-${u._id}">
-            <img class="avatar" src="${u.profilePic}" alt="${u.username}" />
+            <a href="/profile?userId=${u._id}" class="profile-link" aria-label="Open ${escapeHtml(u.username)} profile">
+              <img class="avatar" src="${u.profilePic}" alt="${u.username}" />
+            </a>
             <div class="user-info">
-              <strong onclick="viewUserProfile('${u._id}')" style="cursor:pointer;">${u.username}</strong>
-              <p class="muted" style="font-size:12px; margin:4px 0;">${u.bio || 'No bio'}</p>
+              <strong><a class="profile-link" href="/profile?userId=${u._id}">${escapeHtml(u.username)}</a></strong>
+              <p class="muted" style="font-size:12px; margin:4px 0;">${escapeHtml(u.bio || 'No bio')}</p>
               <p class="muted" style="font-size:12px;">${relationLabel}${mutualLabel ? ` • ${mutualLabel}` : ""} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
               <div class="user-actions">
                 <a href="#" class="btn-small follow-btn" data-action="toggle-follow" data-user-id="${u._id}">${isFollowing ? 'Unfollow' : 'Follow'}</a>
@@ -459,12 +795,59 @@ async function loadExploreUsers() {
     addComment(event, postId);
   });
 
+  storiesRail?.addEventListener("click", async (event) => {
+    const btn = event.target.closest('button[data-action="open-story"][data-user-id]');
+    if (!btn) return;
+    const userId = btn.dataset.userId;
+    if (!userId) return;
+    await openStoryViewer(userId);
+  });
+
+  storiesRail?.addEventListener("click", (event) => {
+    const btn = event.target.closest('[data-action="add-story"]');
+    if (!btn) return;
+    storyInput?.click();
+  });
+
+  storiesRail?.addEventListener("keydown", (event) => {
+    const target = event.target.closest('[data-action="add-story"]');
+    if (!target) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    storyInput?.click();
+  });
+
+  watchAllStoriesBtn?.addEventListener("click", watchAllStories);
+  addStoryBtn?.addEventListener("click", () => storyInput?.click());
+
+  storyInput?.addEventListener("change", async () => {
+    await uploadMultipleStories(storyInput.files);
+    storyInput.value = "";
+  });
+
+  closeStoryViewerBtn?.addEventListener("click", closeStoryViewer);
+  storyPrevBtn?.addEventListener("click", () => showStoryAt(activeStoryIndex - 1));
+  storyNextBtn?.addEventListener("click", () => showStoryAt(activeStoryIndex + 1));
+  document.getElementById("storyHeartBtn")?.addEventListener("click", toggleStoryLike);
+
+  storyViewer?.addEventListener("click", (event) => {
+    if (event.target === storyViewer) closeStoryViewer();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!storyViewer?.classList.contains("open")) return;
+    if (event.key === "Escape") closeStoryViewer();
+    if (event.key === "ArrowRight") showStoryAt(activeStoryIndex + 1);
+    if (event.key === "ArrowLeft") showStoryAt(activeStoryIndex - 1);
+  });
+
   window.addEventListener("scroll", () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 150) loadPosts();
   });
 
   renderHomeProfileCard();
   loadPosts();
+  loadStories();
   loadNotifications();
   loadFriends();
   loadExploreUsers();

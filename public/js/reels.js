@@ -31,25 +31,35 @@ function escapeHtml(value) {
   });
 }
 
+function getProfileHref(user) {
+  const userId = user?._id || user?.id;
+  return userId ? `/profile?userId=${userId}` : "/profile";
+}
+
 const renderReel = (post) => {
   const videoUrl = post.mediaUrl || "";
+  const profileHref = getProfileHref(post.userId);
   return `
     <article class="card post-card">
       <div class="row post-head">
-        <img class="avatar" src="${post.userId?.profilePic || "/public/images/default-avatar.svg"}" alt="avatar" />
+        <a href="${profileHref}" class="profile-link" aria-label="Open ${escapeHtml(post.userId?.username || "user")} profile">
+          <img class="avatar" src="${post.userId?.profilePic || "/public/images/default-avatar.svg"}" alt="avatar" />
+        </a>
         <div>
-          <strong>${escapeHtml(post.userId?.username || "Unknown")}</strong>
+          <strong><a href="${profileHref}" class="profile-link">${escapeHtml(post.userId?.username || "Unknown")}</a></strong>
           <div class="muted">${new Date(post.createdAt).toLocaleString()}</div>
         </div>
       </div>
       <p>${escapeHtml(post.caption)}</p>
       <video class="post-video" src="${videoUrl}" controls playsinline preload="metadata"></video>
       <div class="row post-actions">
-        <button type="button" class="btn-small ${post.isLiked ? "liked" : ""}" data-action="post-react" data-post-id="${post._id}" data-react="like">
-          ${post.isLiked ? "Unlike" : "Like"} (${post.likesCount ?? 0})
+        <button type="button" class="btn-small reaction-btn ${post.isLiked ? "liked" : ""}" data-action="post-react" data-post-id="${post._id}" data-react="like" aria-label="${post.isLiked ? "Undo" : "Add"} like" title="${post.isLiked ? "Undo" : "Add"} like">
+          <span class="reaction-icon" aria-hidden="true">&#128077;</span>
+          <span class="reaction-count">${post.likesCount ?? 0}</span>
         </button>
-        <button type="button" class="btn-small ${post.isDisliked ? "disliked" : ""}" data-action="post-react" data-post-id="${post._id}" data-react="dislike">
-          ${post.isDisliked ? "Undislike" : "Dislike"} (${post.dislikesCount ?? 0})
+        <button type="button" class="btn-small reaction-btn ${post.isDisliked ? "disliked" : ""}" data-action="post-react" data-post-id="${post._id}" data-react="dislike" aria-label="${post.isDisliked ? "Undo" : "Add"} dislike" title="${post.isDisliked ? "Undo" : "Add"} dislike">
+          <span class="reaction-icon" aria-hidden="true">&#128078;</span>
+          <span class="reaction-count">${post.dislikesCount ?? 0}</span>
         </button>
         <button type="button" class="btn-small" data-action="open-comments" data-post-id="${post._id}">Comments</button>
       </div>
@@ -115,7 +125,7 @@ async function loadComments(postId) {
           ? comments
               .map(
                 (c) => `<div class="comment-item">
-                  <strong>${escapeHtml(c.userId?.username || "User")}</strong>
+                  <strong><a class="profile-link" href="${getProfileHref(c.userId)}">${escapeHtml(c.userId?.username || "User")}</a></strong>
                   <span>${escapeHtml(c.commentText)}</span>
                 </div>`
               )

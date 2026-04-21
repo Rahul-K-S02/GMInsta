@@ -2,6 +2,25 @@ requireAuth();
 const discoverList = document.getElementById("discoverList");
 const socket = io("/", { auth: { token: getToken() } });
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return c;
+    }
+  });
+}
+
 socket.on("connect", () => {
   console.log("Discover socket connected");
 });
@@ -28,10 +47,12 @@ async function loadDiscoverUsers() {
 
         return `
           <div class="user-item" id="discover-${u._id}">
-            <img class="avatar" src="${u.profilePic}" alt="${u.username}" />
+            <a href="/profile?userId=${u._id}" class="profile-link" aria-label="Open ${escapeHtml(u.username)} profile">
+              <img class="avatar" src="${u.profilePic}" alt="${escapeHtml(u.username)}" />
+            </a>
             <div class="user-info">
-              <strong onclick="viewUserProfile('${u._id}')" style="cursor:pointer;">${u.username}</strong>
-              <p class="muted" style="font-size:12px; margin:4px 0;">${u.bio || 'No bio'}</p>
+              <strong><a class="profile-link" href="/profile?userId=${u._id}">${escapeHtml(u.username)}</a></strong>
+              <p class="muted" style="font-size:12px; margin:4px 0;">${escapeHtml(u.bio || 'No bio')}</p>
               <p class="muted" style="font-size:12px;">${relationLabel}${mutualLabel ? ` • ${mutualLabel}` : ""} • ${u.followersCount || 0} followers • ${u.followingCount || 0} following</p>
               <div class="user-actions">
                 <a href="#" class="btn-small follow-btn" data-action="toggle-follow" data-user-id="${u._id}">${isFollowing ? 'Unfollow' : 'Follow'}</a>
